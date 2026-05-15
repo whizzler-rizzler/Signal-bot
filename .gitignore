@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+.env.local
+.env.*.local
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# DuckDB
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+
+# Data + logs (NEVER commit)
+data/
+logs/
+cache/
+artifacts/
+
+# Backtest outputs
+reports/
+*.html.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Claude Code session noise (poza CLAUDE.md który JEST commited)
+.claude/sessions/
+.claude/cache/
+
+# Secrets (paranoia layer)
+**/secrets.yaml
+**/credentials.json
+**/*_key.txt
+**/*.pem

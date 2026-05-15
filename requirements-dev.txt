@@ -1,0 +1,20 @@
+# Deep Owl — dev/test dependencies
+-r requirements.txt
+
+# Testing
+pytest>=8.0,<10
+pytest-asyncio>=0.23,<2
+pytest-cov>=4.1,<7
+pytest-mock>=3.12,<4
+aioresponses>=0.7,<1        # mock aiohttp for adapter tests
+
+# Linting + types
+ruff>=0.4,<1
+mypy>=1.9,<2
+
+# Pre-commit (faza 1+)
+pre-commit>=3.6,<5
+
+# Backtest reports
+plotly>=5.20,<7
+pandas>=2.2,<3              # tylko reports/notebooks — NIE w hot-path

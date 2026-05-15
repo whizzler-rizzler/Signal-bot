@@ -1,0 +1,35 @@
+# Deep Owl — runtime dependencies
+# Pinned major versions; bump deliberately, never auto-upgrade
+
+# Async I/O + HTTP
+aiohttp>=3.9,<4
+tenacity>=8.2,<10           # retry with exponential backoff
+
+# Storage
+duckdb>=1.0,<2
+
+# Data processing
+numpy>=1.26,<3
+pyarrow>=14,<22             # parquet + columnar interop
+
+# Config
+pydantic>=2.6,<3
+pydantic-settings>=2.2,<3
+
+# API framework (faza 6)
+fastapi>=0.110,<1
+uvicorn[standard]>=0.27,<1
+jinja2>=3.1,<4              # dashboard templates
+
+# Telegram (faza 6)
+python-telegram-bot>=20.7,<22
+
+# Logging
+structlog>=24.1,<26
+
+# Compression (read parent recorder zst archives)
+zstandard>=0.22,<1
+
+# CLI
+click>=8.1,<9
+rich>=13.7,<15              # pretty terminal output
