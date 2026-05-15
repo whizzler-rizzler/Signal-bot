@@ -6,6 +6,44 @@ Wszystkie zmiany w projekcie. Format: [Keep a Changelog](https://keepachangelog.
 
 (Praca w toku — kandyduje do następnego tagu)
 
+## [0.1.3] — 2026-05-15 — Hexagonal architecture + 4 nowe MD docs
+
+User feedback po v0.1.2: **"top of the top architektura, każdy silnik osobny plik, connectors osobno, processors osobno, parallelism max"** + lista 4 nowych dokumentów do przygotowania.
+
+### Added
+- **RESUME_INDEX.md** (NEW) — router wskazujący który dokument do czego (zacznij sesję tutaj)
+- **RESEARCH.md** (NEW) — methodology, signal theory (Wyckoff, funding squeeze), walk-forward methodology, statistical significance, literature references
+- **TECH_STACK.md** (NEW) — deep dive stack: Python 3.11+, asyncio + multiprocessing parallelism strategy, DuckDB columnar rationale, dependency table z uzasadnieniami
+- **DATABASE.md** (NEW) — DB deep dive: pełen schema v3 (13 tabel), partitioning strategy (DuckDB + parquet cold tier), indexes, common query patterns, migrations, backup, performance tuning, skala estimates
+
+### Changed
+- **ARCHITECTURE.md MAJOR REWRITE** — hexagonal architecture (Cockburn 2005 ports & adapters):
+  - 6 layers: connectors / processors / engines / orchestrator / parallelism / output
+  - Każdy engine = osobny plik (Module 1 = 7 engines, Module 2 = 8 engines, Module 3 = 2 engines)
+  - Każdy connector = osobny katalog per source (~25 plików)
+  - Każdy processor per data type (numerical / timeseries / text / events)
+  - Orchestrator decyduje parallelism (NIE engine)
+  - Reguła żelaznej separacji: engines NIE rozmawiają z API/DB, connectors NIE liczą metryk, processors NIE I/O
+- **DATA_SOURCES.md update** — separated per connector: ~20 odrębnych connectorów wymienionych z paths w kodzie
+- **PHASES.md update** — re-faza pod hexagonal: Faza 2 dodaje engines layer setup, Faza 3a osobno per CEX connector pliki, Faza 4-5 osobne engines per signal/strategy
+- **FILE_HYGIENE.md MAJOR UPDATE**:
+  - Limit MD root: **8 → 12** (dodane: RESUME_INDEX, RESEARCH, TECH_STACK, DATABASE)
+  - Dodana sekcja "Hexagonal architecture rules (Python skeleton)" z 8 żelaznymi regułami
+  - Dodane code patterns ZAKAZANE: mega-engine >200 linii, engine który robi I/O, connector który liczy metryki, processor który rozmawia z API
+  - Anti-bloat checklist: dodano engine independence test
+- **CLAUDE.md update** — wspomina hexagonal architecture, link do RESUME_INDEX jako entry point
+- **README.md update** — quick architectural overview (hexagonal layout) + dokumentacja table 12 plików
+
+### Decisions
+- Hexagonal architecture (Ports & Adapters pattern, Cockburn 2005) — żelazna separacja warstw
+- Concurrency strategy: asyncio (I/O) + multiprocessing (CPU-bound engines)
+- Engines NIE wpinalne automatycznie — orchestrator decyduje
+- Każdy engine MUSI być uruchamialny SAM z mocked input (independence test)
+- DuckDB hot tier (90 dni) + parquet cold tier (>90d archive)
+
+### Out of scope
+- Bonds, indexy, S&P 500 connectors — to był przykład hipotetyczny z poprzedniego chatu, NIE w naszym scope. Pure crypto only.
+
 ## [0.1.2] — 2026-05-15 — WebSocket-first + Module 3 (New Listings)
 
 User feedback po v0.1.1 doprecyzował 3 fundamentalne kwestie skali:

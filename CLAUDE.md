@@ -1,8 +1,10 @@
 # CLAUDE.md — Deep Owl (Breakout Signals)
 
-> **Project:** Deep Owl · **Status:** Faza 0 (skeleton + planning docs) · **HEAD:** v0.1.2
+> **Project:** Deep Owl · **Status:** Faza 0 (skeleton + planning docs) · **HEAD:** v0.1.3
 >
 > **Ważne:** Ten projekt jest CAŁKOWICIE ODRĘBNY od parent `D:\Crypto\Claude` (market_maker / spread_reversion / live_mm). Mimo że folder leży w hierarchii pod `D:\Crypto\Claude\`, **NIE** loaduj parent `D:\Crypto\Claude\CLAUDE.md` jako kontekst dla tego projektu. Pracujemy tylko w obrębie `D:\Crypto\Claude\Breakout_signals\`.
+>
+> **Architektura:** **Hexagonal** (connectors / processors / engines / orchestrator / parallelism). Każdy engine = osobny plik. Każdy connector = osobny katalog per source. Top of the top separation. Patrz [ARCHITECTURE.md](ARCHITECTURE.md) i [FILE_HYGIENE.md](FILE_HYGIENE.md) — żelazne reguły.
 
 ## Projekt
 
@@ -122,13 +124,17 @@ Patrz [FILE_HYGIENE.md](FILE_HYGIENE.md). TL;DR:
 
 ## Linki — zacznij stąd
 
-1. **[PHASES.md](PHASES.md)** — gdzie jesteśmy, co dalej
-2. **[ARCHITECTURE.md](ARCHITECTURE.md)** — pełna architektura systemu
-3. **[DATA_SOURCES.md](DATA_SOURCES.md)** — API matrix (WS + REST + announcements)
-4. **[GIT_WORKFLOW.md](GIT_WORKFLOW.md)** — branche, commit format, PR rules
-5. **[FILE_HYGIENE.md](FILE_HYGIENE.md)** — meta-rules anti-sprawl
-6. **[CHANGELOG.md](CHANGELOG.md)** — zamknięte fazy + tags
-7. **[docs/deep_owl_v1.md](docs/deep_owl_v1.md)** — long-form architecture deck (14 sekcji, v0.1.2)
+1. **[RESUME_INDEX.md](RESUME_INDEX.md)** — **router** wskazujący który dokument do czego (najszybciej zaorientujesz się tutaj)
+2. **[PHASES.md](PHASES.md)** — gdzie jesteśmy, co dalej
+3. **[ARCHITECTURE.md](ARCHITECTURE.md)** — pełna architektura (hexagonal, 6 layers)
+4. **[TECH_STACK.md](TECH_STACK.md)** — deep dive stack + parallelism strategy
+5. **[DATABASE.md](DATABASE.md)** — DB schema + queries + partitioning
+6. **[DATA_SOURCES.md](DATA_SOURCES.md)** — API matrix (~25 connectorów per source/type)
+7. **[RESEARCH.md](RESEARCH.md)** — methodology, signal theory, walk-forward, literature
+8. **[GIT_WORKFLOW.md](GIT_WORKFLOW.md)** — branche, commit format, PR rules
+9. **[FILE_HYGIENE.md](FILE_HYGIENE.md)** — anti-sprawl + hexagonal architecture rules
+10. **[CHANGELOG.md](CHANGELOG.md)** — zamknięte fazy + tags
+11. **[docs/deep_owl_v1.md](docs/deep_owl_v1.md)** — long-form architecture deck (14 sekcji)
 
 ## Doc currency check (session start)
 
