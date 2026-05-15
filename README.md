@@ -34,7 +34,7 @@ python -m deep_owl.cli --help
 
 CEX REST API (Binance/Bybit/OKX/Coinbase klines + funding + open interest) jako primary data source dla ~5000 big cap tokenów filtrowanych z CoinMarketCap/CoinGecko. DuckDB jako embedded storage (columnar, partitioned by month dla skali). Sygnały akumulacji liczone co 5 min: volume profile + funding rate skew + OI buildup + cross-exchange divergence + liquidation imbalance + opcjonalnie social sentiment z parent scanner.
 
-Pełne szczegóły → [ARCHITECTURE.md](ARCHITECTURE.md). Pitch 20 stron → `docs/deep_owl_v1.docx`.
+Pełne szczegóły → [ARCHITECTURE.md](ARCHITECTURE.md). Long-form deck (12 sekcji) → [docs/deep_owl_v1.md](docs/deep_owl_v1.md).
 
 ## Roadmap (fazy)
 

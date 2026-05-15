@@ -120,7 +120,7 @@ Patrz [FILE_HYGIENE.md](FILE_HYGIENE.md). TL;DR:
 4. **[GIT_WORKFLOW.md](GIT_WORKFLOW.md)** — branche, commit format, PR rules
 5. **[FILE_HYGIENE.md](FILE_HYGIENE.md)** — meta-rules anti-sprawl
 6. **[CHANGELOG.md](CHANGELOG.md)** — zamknięte fazy + tags
-7. **`docs/deep_owl_v1.docx`** — 20-stronicowy pitch (zaktualizowany v0.1.0 — big caps focus)
+7. **[docs/deep_owl_v1.md](docs/deep_owl_v1.md)** — long-form architecture deck (12 sekcji, big caps focus v0.1.0)
 
 ## Doc currency check (session start)
 

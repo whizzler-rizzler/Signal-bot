@@ -32,7 +32,7 @@
 
 **Plus dozwolone:**
 - `docs/decisions/ADR-NNNN-{slug}.md` — Architecture Decision Records (max 5)
-- `docs/deep_owl_v1.docx` — snapshot 20-stronicowego pitchu (tylko ten 1 plik DOCX)
+- `docs/deep_owl_v1.md` — long-form architecture deck (tylko ten 1 plik, redaguj redakcyjnie nie wersjonuj filename)
 
 ## MD files — ZAKAZANE
 

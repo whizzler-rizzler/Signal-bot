@@ -25,14 +25,16 @@
 - [x] Update CHANGELOG.md (entry v0.1.0)
 - [x] Update db/schema.sql (drop fresh_projects, add token_listings/klines/funding/open_interest)
 - [x] Update src/deep_owl/cli.py + data/models.py (nowe komendy + modele)
-- [x] Regenerate DOCX (scripts/generate_docx.js → big caps content)
+- [x] Regenerate long-form deck w docs/deep_owl_v1.md (big caps content)
 - [x] Tag v0.1.0
+- [x] DOCX → MD swap (drop deep_owl_v1.docx + generate_docx.js, single docs/deep_owl_v1.md)
+- [x] Tag v0.1.1
 
 **Verification (v0.1.0):**
 1. `git log --oneline | head -3` → 2 commity (v0.0.0 init + v0.1.0 pivot)
 2. `grep -ri "dexscreener\|birdeye\|rugcheck\|goplus\|fresh" *.md src/ | wc -l` → 0 (lub tylko negative refs "out of scope")
 3. `grep -ri "big.cap\|coinmarketcap\|coingecko" *.md` → kilkanaście matches w ARCHITECTURE/CLAUDE/DATA_SOURCES
-4. Otwarcie `docs/deep_owl_v1.docx` → 20 stron z big caps content
+4. Otwarcie `docs/deep_owl_v1.md` → 12 sekcji z big caps content
 
 **Done criteria:** Wszystkie checkboxes ✅ + user otworzył DOCX i zatwierdził pivot. Tag `v0.1.0`.
 

@@ -6,6 +6,29 @@ Wszystkie zmiany w projekcie. Format: [Keep a Changelog](https://keepachangelog.
 
 (Praca w toku — kandyduje do następnego tagu)
 
+## [0.1.1] — 2026-05-15 — DOCX → MD swap
+
+Long-form architecture deck przeniesiony z DOCX (binarny, edycja w Wordzie) do pojedynczego MD pliku.
+
+### Added
+- `docs/deep_owl_v1.md` — long-form deck w markdown (12 sekcji, ~5000 słów, ten sam content co poprzedni DOCX v0.1.0)
+
+### Removed
+- `docs/deep_owl_v1.docx` — DOCX v0.0.0 (DEX-first deprecated content)
+- `docs/deep_owl_v0_1_0.docx` — DOCX v0.1.0 fallback
+- `scripts/generate_docx.js` — generator JS (już niepotrzebny, MD edytujemy ręcznie)
+
+### Changed
+- Cross-references w CLAUDE.md, README.md, PHASES.md, FILE_HYGIENE.md zaktualizowane: DOCX → MD
+- FILE_HYGIENE.md hard limity: pole "long-form deck" zmienione z DOCX na MD
+
+### Rationale
+- MD czyta się lepiej (plain text w terminal/editor)
+- MD diff'uje się w PR (czytelne git diff)
+- Bez Word lock issues (file locked = nie można nadpisać)
+- Edycja w VS Code zamiast Worda
+- Jeden mniej format/tool w stacku
+
 ## [0.1.0] — 2026-05-15 — PIVOT: Big Caps CEX-First
 
 User feedback po v0.0.0 wskazał krytyczny błąd kierunku: skupiliśmy się na low caps / fresh DEX projects, ale TOP 1 PRIORITY to **big caps na CEX-ach z stażem (top ~5000 z CMC/CoinGecko po filtrowaniu)**. DEX/fresh całkowicie WYWALONE z scope.
