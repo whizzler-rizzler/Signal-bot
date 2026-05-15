@@ -1,213 +1,211 @@
 # Data Sources — Deep Owl
 
-> Wszystkie źródła danych z których czerpiemy. Update przy każdym nowym adapterze.
+> Wszystkie źródła danych z których czerpiemy. **Big caps CEX-first** — DEX/fresh out of scope.
 
 ## Quick reference table
 
 | # | Źródło | Faza | Auth | Rate limit (free) | Koszt | Fallback |
 |---|---|---|---|---|---|---|
-| 1 | Dexscreener | 2 | None | 60 req/min | $0 | Birdeye |
-| 2 | Birdeye | 2 | API key | 30 req/min (free) | $0 free / $99 mo growth | Dexscreener |
-| 3 | Parent CEX recorder | 3 | filesystem read | — | $0 (already collected) | — |
-| 4 | RugCheck.xyz | 5 | None | ~30 req/min | $0 | Manual review |
-| 5 | GoPlus Security | 5 | None | 30 req/min | $0 | Manual review |
-| 6 | Telegram Bot API | 6 | Bot token | 30 msg/s per bot | $0 | — |
-| 7 | Social_media_scanner (parent) | 4+ (opt) | parent venv | — | $0 | Skip social signal |
+| 1 | CoinGecko API | 2 | API key opcjonalne | 30 req/min | $0 free / $129 mo Pro | CoinMarketCap |
+| 2 | CoinMarketCap API | 2 | API key | 333 req/dzień | $0 / $79 mo Hobbyist | CoinGecko |
+| 3 | Binance REST | 3 | None (public) | 6000 weight/min | $0 | Bybit/OKX |
+| 4 | Bybit REST | 3 | None (public) | 50 req/sec | $0 | Binance/OKX |
+| 5 | OKX REST | 3 | None (public) | 20 req/2s | $0 | Binance/Bybit |
+| 6 | Coinbase REST (Exchange) | 3 | None (public) | 10 req/sec | $0 | Spot only |
+| 7 | Parent recorder (BTC/ETH/HYPE) | 3 opt | filesystem | — | $0 | CEX REST |
+| 8 | Telegram Bot API | 6 | Bot token | 30 msg/s per bot | $0 | — |
+| 9 | Social_media_scanner (parent) | 5 opt | parent venv | — | $0 | Skip social signal |
 
 ---
 
-## 1. Dexscreener API
+## 1. CoinGecko API (primary universe source)
 
-**Docs:** https://docs.dexscreener.com/api/reference
+**Docs:** https://docs.coingecko.com/v3.0.1/reference/introduction
 
-**Used in:** Faza 2 (DEX adapter), Faza 5 (new pairs feed)
+**Used in:** Faza 2 (universe building, market cap rankings)
 
 **Endpoints:**
 
 | Endpoint | Purpose | Rate weight |
 |---|---|---|
-| `GET /latest/dex/tokens/{tokenAddress}` | Token overview (paris, liquidity, vol) | 1 |
-| `GET /latest/dex/pairs/{chainId}/{pairAddress}` | Pair detail | 1 |
-| `GET /latest/dex/search?q=...` | Search | 1 |
-| `GET /token-profiles/latest/v1` | Trending profiles (universe seed) | 1 |
-| `GET /token-boosts/latest/v1` | Boosted tokens | 1 |
+| `GET /coins/markets?vs_currency=usd&per_page=250&page=N` | Paginated tokens with market cap, volume, price | 1 |
+| `GET /coins/list` | All tokens IDs (~10k+) | 1 |
+| `GET /coins/{id}` | Token detail (community, dev metrics) | 1 (rzadko używamy) |
 
-**Rate limit:** 60 req/min global (no auth). Burst OK, ale 429 retry-after.
+**Rate limit:** 30 req/min (free tier). Pro tier $129/mo = 500/min, lepsze dla full universe rebuild w <5 min.
 
-**Response shape (token endpoint):**
+**Response shape (markets):**
 ```json
-{
-  "schemaVersion": "1.0.0",
-  "pairs": [{
-    "chainId": "solana",
-    "dexId": "raydium",
-    "pairAddress": "...",
-    "baseToken": { "address": "...", "name": "...", "symbol": "BONK" },
-    "quoteToken": { "symbol": "SOL" },
-    "priceUsd": "0.0000234",
-    "txns": { "m5": {"buys": 12, "sells": 8}, "h1": {...}, "h6": {...}, "h24": {...} },
-    "volume": { "h24": 1234567, "h6": ..., "h1": ..., "m5": ... },
-    "priceChange": { "h24": 5.2, ... },
-    "liquidity": { "usd": 2100000, "base": ..., "quote": ... },
-    "fdv": ...,
-    "marketCap": ...,
-    "pairCreatedAt": 1716000000000
-  }]
-}
+[
+  {
+    "id": "bitcoin",
+    "symbol": "btc",
+    "name": "Bitcoin",
+    "current_price": 98432.10,
+    "market_cap": 1950000000000,
+    "market_cap_rank": 1,
+    "total_volume": 28500000000,
+    "high_24h": 99100,
+    "low_24h": 97800,
+    "price_change_24h": 234,
+    "price_change_percentage_24h": 0.24,
+    "circulating_supply": 19800000,
+    "total_supply": 21000000,
+    "max_supply": 21000000,
+    "ath": 109000,
+    "atl": 67.81,
+    "atl_date": "2013-07-06T00:00:00.000Z"
+  }
+]
 ```
 
-**Mapowanie do `TokenSnapshot`:** patrz `src/deep_owl/data/dexscreener.py`.
+**Mapowanie do Token model:** `src/deep_owl/data/coingecko.py`.
 
 **Watchpoints:**
-- API może zwrócić `pairs: []` dla świeżego tokena (cache jeszcze nie zbudowany) — retry po 30s
-- `volume.h24` w USD, nie w base token
-- `txns` daje tylko count, nie volume per tx
-- Chain ids: `solana`, `ethereum`, `bsc`, `arbitrum`, `base`, `polygon`, etc.
+- Free tier 30/min = ~50 stron/min × 250 tokens = 12,500 tokens — wystarczy dla universe (~10k+)
+- Pełen universe rebuild zajmuje 1-2 min na free tier
+- Daily refresh wystarczy (rynek cap rzadko zmienia się znacząco intraday)
 
 ---
 
-## 2. Birdeye API
+## 2. CoinMarketCap API (cross-check + fallback)
 
-**Docs:** https://docs.birdeye.so/
+**Docs:** https://coinmarketcap.com/api/documentation/v1/
 
-**Used in:** Faza 2 (Solana priority), Faza 4 (holder data dla Module 1)
-
-**Tiers:**
-- **Free:** 30 req/min, basic endpoints
-- **Growth ($99/mo):** 300 req/min, advanced (historical, holder graph, OHLCV)
-- **Business+:** dla scale
-
-**Endpoints (free tier):**
-
-| Endpoint | Purpose |
-|---|---|
-| `GET /defi/token_overview?address=X` | Token info |
-| `GET /defi/price?address=X` | Real-time price |
-| `GET /defi/v3/token/holder?address=X&offset=0&limit=10` | Top holders (krytyczne dla top10_drop signal) |
-| `GET /defi/v3/token/list?sort_by=v24hUSD&limit=100` | Top tokens (universe seed) |
-
-**Auth:** Header `X-API-KEY: <key>`. Key z .env.
-
-**Watchpoints:**
-- Birdeye PRIMARY dla Solana, secondary dla EVM (Dexscreener lepszy multi-chain)
-- Holder endpoint wymaga growth tier dla pełnej listy — free tier max top 10
-- Rate limit reset co 60s, hard cap (not burst-friendly)
-
----
-
-## 3. Parent CEX recorder (read-only reuse)
-
-**Path:** `D:/Crypto/Claude/data/{exchange}/{date}/{symbol}_{update_type}_{hour}.bin.zst`
-
-**Used in:** Faza 3 (backtest candle aggregation), Faza 4 (CEX bid imbalance signal)
-
-**Format:** Binary zstandard-compressed records, hourly rotation, per exchange/symbol/update_type.
-
-**Update types:**
-- `orderbook` — full L2 snapshot + updates
-- `trades` — taker fills
-- `funding` — funding rate (perpetuals)
-- `markprice` — mark price (perpetuals)
-- `liquidations` — liquidation events
-
-**Exchanges available (14):** Binance, Bybit, OKX, Bitget, Coinbase, GRVT, HotStuff, Extended, Lighter, Pacifica, ZO_Exchange, StandX, Decibel, Nado.
-
-**Reader:** check parent `D:/Crypto/Claude/analyzer/data/reader.py` (lub `D:/Crypto/Claude/reader.py`) — streaming reader. Reuse pattern.
-
-**Watchpoints:**
-- TYLKO read access (parent recorder ma exclusive write)
-- Data od 2026-04-08 (4+ tygodni przy Fazie 3 start)
-- Pair coverage: BTC, ETH, HYPE w USDT/USDC variants per exchange
-
----
-
-## 4. RugCheck.xyz
-
-**Docs:** https://api.rugcheck.xyz/swagger/index.html
-
-**Used in:** Faza 5 (rugpull filter dla Solana SPL tokens)
+**Used in:** Faza 2 (cross-check uniwersum, fallback gdy CoinGecko down)
 
 **Endpoints:**
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /v1/tokens/{mint}/report` | Full security report (risk score, holder analysis, LP status) |
-| `GET /v1/tokens/{mint}/report/summary` | Skrócona wersja (tańsza) |
+| `GET /v1/cryptocurrency/listings/latest?start=1&limit=5000` | Top 5000 tokens (jeden call!) |
+| `GET /v1/cryptocurrency/quotes/latest?id=X` | Quote single token |
 
-**Response (relevant fields):**
-```json
-{
-  "mint": "...",
-  "tokenMeta": { "name": "...", "symbol": "..." },
-  "totalLPProviders": 12,
-  "totalMarketLiquidity": 234567.89,
-  "risks": [
-    { "name": "Single holder ownership", "level": "danger", "score": -100 }
-  ],
-  "score": 234,           // <500 = HIGH risk
-  "score_normalised": 23, // 0-100 (higher = safer)
-  "rugged": false
-}
-```
+**Rate limit:** 333 req/dzień (free Basic tier). Hobbyist $79/mo = 10k req/dzień.
 
-**Decision logic dla rugpull filter:**
-- `score_normalised < 30` → EXCLUDE
-- `rugged == true` → EXCLUDE
-- Any risk z `level == "danger"` → EXCLUDE
+**Auth:** Header `X-CMC_PRO_API_KEY`.
 
 **Watchpoints:**
-- Solana only — dla EVM użyj GoPlus
-- Rate limit nieformalny, ~30/min wystarczy
-- Score może się zmieniać w czasie (re-check dla Stage 2+)
+- 333 calls/dzień bardzo niski — wystarczy na 1 universe rebuild + okazjonalny lookup
+- Limit 5000 per call jest dobry — top 5000 w jednym żądaniu
+- Wymagana rejestracja (free tier też)
 
 ---
 
-## 5. GoPlus Security
+## 3-6. CEX REST APIs (Binance / Bybit / OKX / Coinbase)
 
-**Docs:** https://docs.gopluslabs.io/reference/
+**Used in:** Faza 3 (klines + funding + open interest)
 
-**Used in:** Faza 5 (rugpull filter dla EVM tokens)
+### 3. Binance REST
 
-**Endpoint:**
-- `GET /api/v1/token_security/{chain_id}?contract_addresses=X` — multi-chain (1=ETH, 56=BSC, 137=Polygon, 8453=Base, 42161=Arbitrum)
+**Docs:** https://binance-docs.github.io/apidocs/spot/en/
 
-**Response (relevant fields):**
+| Endpoint | Purpose | Weight |
+|---|---|---|
+| `GET /api/v3/klines` | Spot klines (5m/15m/1h) | 1 per call |
+| `GET /api/v3/exchangeInfo` | All symbols metadata | 10 |
+| `GET /fapi/v1/klines` | Futures klines | 1 |
+| `GET /fapi/v1/fundingRate` | Funding history | 1 |
+| `GET /fapi/v1/openInterest` | Current OI | 1 |
+| `GET /futures/data/openInterestHist` | OI history | 1 |
+
+**Rate limit:** 6000 weight/min global (IP-based, no auth needed for public). Klines pull 1 weight per call → 6000 calls/min.
+
+**Klines params:** `symbol`, `interval` (1m/3m/5m/15m/30m/1h/4h/1d), `startTime`, `endTime`, `limit` (max 1500).
+
+**Response (klines):**
 ```json
-{
-  "result": {
-    "0x...": {
-      "is_honeypot": "0",
-      "is_open_source": "1",
-      "is_proxy": "0",
-      "is_mintable": "0",
-      "owner_address": "0x000...",  // dead address = renounced
-      "owner_balance": "0",
-      "creator_address": "0x...",
-      "creator_balance": "...",
-      "lp_holders": [...],
-      "lp_total_supply": "...",
-      "buy_tax": "0.01",
-      "sell_tax": "0.01",
-      "hidden_owner": "0",
-      "can_take_back_ownership": "0"
-    }
-  }
-}
+[
+  [
+    1729600000000,        // open time (ms)
+    "98432.10",           // open
+    "98500.00",           // high
+    "98300.00",           // low
+    "98432.10",           // close
+    "12.345",             // volume (BTC)
+    1729600299999,        // close time
+    "1216000.50",         // quote volume (USD)
+    1234,                 // trades count
+    "6.123",              // taker buy base
+    "603000.25",          // taker buy quote
+    "0"                   // ignored
+  ]
+]
 ```
 
-**Decision logic:**
-- `is_honeypot == "1"` → EXCLUDE
-- `buy_tax > 0.10` OR `sell_tax > 0.10` → EXCLUDE (10%+ tax = rug)
-- `hidden_owner == "1"` OR `can_take_back_ownership == "1"` → EXCLUDE
-- Top LP holder NOT burn address (0x000...dead / 0x...000) AND NOT locker contract → EXCLUDE (LP not locked)
+**Watchpoints:**
+- 1500 bars max per call → dla 5m candles to ~5 dni history per call
+- Symbol naming: BTCUSDT (no separator). Spot vs futures różne endpointy.
+- Coin-margined futures = osobny endpoint (`/dapi/`)
+
+### 4. Bybit REST
+
+**Docs:** https://bybit-exchange.github.io/docs/v5/intro
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /v5/market/kline` | Klines (spot/linear/inverse) |
+| `GET /v5/market/funding/history` | Funding history |
+| `GET /v5/market/open-interest` | OI history |
+| `GET /v5/market/instruments-info` | Symbols metadata |
+
+**Rate limit:** 50 req/sec ≈ 3000/min. Public endpoints no auth.
+
+**Klines params:** `category` (spot/linear/inverse), `symbol`, `interval`, `start`, `end`, `limit` (max 1000).
+
+### 5. OKX REST
+
+**Docs:** https://www.okx.com/docs-v5/en/
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v5/market/candles` | Candlesticks |
+| `GET /api/v5/public/funding-rate-history` | Funding history |
+| `GET /api/v5/public/open-interest` | OI |
+
+**Rate limit:** 20 req/2s ≈ 600/min. Lower than Binance/Bybit.
+
+**Symbol naming:** BTC-USDT-SWAP (perpetual), BTC-USDT (spot). Different from Binance/Bybit.
+
+### 6. Coinbase Exchange REST
+
+**Docs:** https://docs.cdp.coinbase.com/exchange/reference
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /products/{product_id}/candles` | Historic rates |
+| `GET /products` | All products |
+
+**Rate limit:** 10 req/sec public.
 
 **Watchpoints:**
-- API zwraca STRING "0"/"1" not boolean — uwaga przy parsowaniu
-- Chain ID musi być dokładny (1, 56, 137, ...)
+- **SPOT ONLY** — Coinbase nie ma public futures API (Coinbase Advanced Trade ma Futures ale wymaga auth)
+- Dla USA-listed tokens (USDT pairs ograniczone, używa głównie USD/USDC pairs)
+- Symbol naming: BTC-USD (myślnik)
 
 ---
 
-## 6. Telegram Bot API
+## 7. Parent CEX recorder (read-only reuse, opcjonalne)
+
+**Path:** `D:/Crypto/Claude/data/{exchange}/{date}/{symbol}_{update_type}_{hour}.bin.zst`
+
+**Used in:** Faza 3+ (BTC/ETH/HYPE tick precision dla cross-validation Module 1 sygnałów; opcjonalne)
+
+**Format:** Binary zstandard-compressed records, hourly rotation, per exchange/symbol/update_type.
+
+**Update types:** orderbook, trades, funding, markprice, liquidations.
+
+**Reader:** parent `D:/Crypto/Claude/analyzer/data/reader.py` — streaming reader.
+
+**Watchpoints:**
+- TYLKO read access (parent recorder ma exclusive write)
+- Data od 2026-04-08
+- Pair coverage: BTC, ETH, HYPE — dla pozostałych ~5000 tokenów używamy CEX REST API
+- Tick precision tylko dla cross-validation (czy 5m candle z REST API matches tick aggregate z recordera)
+
+---
+
+## 8. Telegram Bot API
 
 **Docs:** https://core.telegram.org/bots/api
 
@@ -217,44 +215,36 @@
 1. Otwórz Telegram, znajdź `@BotFather`
 2. `/newbot` → nazwa + username
 3. Skopiuj token → `.env` jako `TELEGRAM_BOT_TOKEN`
-4. Wyślij wiadomość do bota → uruchom `python -c "from telegram import Bot; ..."` żeby zdobyć `chat_id` → `.env`
+4. Wyślij wiadomość do bota → uruchom test żeby zdobyć `chat_id` → `.env`
 
-**Library:** `python-telegram-bot >= 20.7` (async-native)
+**Library:** `python-telegram-bot >= 20.7` (async-native).
 
 **Rate limits:**
 - 30 messages/sec per bot total
 - 1 message/sec per chat
-- 20 messages/min per group
 
-**Komendy do zaimplementowania (Faza 6):**
-- `/start`, `/help`, `/signals`, `/fresh`, `/paper`, `/backtest <strategy>`, `/mute <token>`, `/unmute <token>`
-
-**Watchpoints:**
-- Bot token = secret, NEVER commit
-- Test message format z preview w grupie testowej zanim go-live
-- Cooldown per token (6h default) wymusza dedup signal storm
+**Komendy (Faza 6):** `/start`, `/help`, `/signals [N]`, `/top`, `/paper`, `/backtest <strategy>`, `/mute <token>`, `/tier <1|2|3>`.
 
 ---
 
-## 7. Social_media_scanner (parent reuse — opcjonalnie)
+## 9. Social_media_scanner (parent reuse — opcjonalnie)
 
 **Path:** `D:/Crypto/Claude/Social_media_scanner/`
 
-**Used in:** Faza 4 (social signal w Module 1 scoring), opcjonalne
+**Used in:** Faza 5 (social signal w Module 1, opcjonalne)
 
 **Co oferuje:**
 - Twitter scanner + sentiment classifier
 - TruthSocial scanner
-- Pipeline w `Social_media_scanner/src/scanner/pipeline/sentiment.py`
 
 **Integration plan:**
-- Read-only access do parent DuckDB / output JSON
+- Read-only access do parent output (DuckDB lub JSON)
 - Mapping: token symbol → mention count + sentiment score
 - Rolling 1h vs 24h_avg → velocity feature
 
 **Watchpoints:**
 - Parent ma OSOBNY venv — uruchamiamy ją niezależnie, czytamy tylko persisted output
-- Jeśli scanner nie działa → Module 1 fallback (waga social = 0, redistribute do innych signals)
+- Jeśli scanner nie działa → Module 1 fallback (waga social = 0, redystrybucja)
 
 ---
 
@@ -264,15 +254,16 @@ Per-source fallback w `src/deep_owl/data/registry.py`:
 
 ```python
 DATA_SOURCE_PRIORITY = {
-    "token_overview": ["dexscreener", "birdeye"],
-    "holders": ["birdeye_growth", "manual"],  # free tier ma tylko top 10
-    "rugpull_solana": ["rugcheck", "manual"],
-    "rugpull_evm": ["goplus", "manual"],
-    "social": ["parent_scanner", "skip"],
+    "universe_markets": ["coingecko", "coinmarketcap"],     # CG primary, CMC fallback
+    "klines": ["binance", "bybit", "okx", "coinbase"],      # per-token: który CEX ma listing
+    "funding": ["binance", "bybit", "okx"],                 # Coinbase nie ma public futures API
+    "open_interest": ["binance", "bybit", "okx"],
+    "tick_precision": ["parent_recorder", "skip"],          # tylko BTC/ETH/HYPE
+    "social": ["parent_scanner", "skip"],                   # opcjonalne
 }
 ```
 
-Pierwszy sukces wygrywa. Skip = sygnał liczony jako 0, redistribute waga do innych w scoring.
+Pierwszy sukces wygrywa. Skip = sygnał liczony jako 0, redistribute waga do innych.
 
 ---
 
@@ -280,10 +271,24 @@ Pierwszy sukces wygrywa. Skip = sygnał liczony jako 0, redistribute waga do inn
 
 | Sekret | Storage | Faza wymagana |
 |---|---|---|
-| `BIRDEYE_API_KEY` | `.env` (gitignored) | 2 (opt), 4 mandatory |
+| `COINMARKETCAP_API_KEY` | `.env` (gitignored) | 2 (cross-check + fallback) |
+| `COINGECKO_API_KEY` | `.env` (gitignored) | 2 opt (Pro tier dla wyższego rate limit) |
 | `TELEGRAM_BOT_TOKEN` | `.env` (gitignored) | 6 |
 | `TELEGRAM_CHAT_ID` | `.env` (gitignored) | 6 |
 
-Brak innych sekretów na razie (Dexscreener, RugCheck, GoPlus, parent recorder = no auth).
+CEX public APIs (Binance, Bybit, OKX, Coinbase) **nie wymagają auth** dla publicznych endpointów (klines, funding, OI).
 
 **NIE commitować `.env`.** `.env.example` jest committed z pustymi values jako template.
+
+---
+
+## Out of scope (NIE używamy w tym projekcie)
+
+- ❌ Dexscreener API
+- ❌ Birdeye API
+- ❌ RugCheck.xyz
+- ❌ GoPlus Security
+- ❌ Pumpfun, Raydium, Jupiter (DEX endpoints)
+- ❌ Etherscan, Solscan (block explorer)
+- ❌ Glassnode, Dune, Nansen (on-chain analytics — może w v2 jako optional)
+- ❌ News APIs (CryptoPanic, Decrypt — może w v2)

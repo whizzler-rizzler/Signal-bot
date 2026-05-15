@@ -1,30 +1,26 @@
-// Deep Owl — DOCX generator (Faza 0 deliverable)
-// Run: node scripts/generate_docx.js
+// Deep Owl — DOCX generator (Faza 0 deliverable, v0.1.0 — big caps CEX-first)
+// Run: NODE_PATH="C:/Users/kubag/AppData/Roaming/npm/node_modules" node scripts/generate_docx.js
 // Output: docs/deep_owl_v1.docx (20 stron, polski, professional styling)
 
 const fs = require("fs");
 const path = require("path");
 const {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  Header, Footer, AlignmentType, PageOrientation, LevelFormat,
-  TabStopType, TabStopPosition, HeadingLevel, BorderStyle, WidthType,
-  ShadingType, PageNumber, PageBreak,
+  Header, Footer, AlignmentType, LevelFormat,
+  HeadingLevel, BorderStyle, WidthType, ShadingType, PageNumber, PageBreak,
 } = require("docx");
 
-// ====== Helpers ======
-
 const FONT = "Calibri";
-const COLOR_PRIMARY = "1F4E79";   // navy
-const COLOR_ACCENT = "2E75B6";    // blue
-const COLOR_MUTED = "595959";     // dark gray
+const COLOR_PRIMARY = "1F4E79";
+const COLOR_ACCENT = "2E75B6";
+const COLOR_MUTED = "595959";
 const COLOR_TABLE_HEADER = "1F4E79";
 const COLOR_TABLE_HEADER_BG = "D9E2F3";
 const COLOR_TABLE_BG_ALT = "F2F2F2";
 
-const PAGE_WIDTH = 12240;   // US Letter
+const PAGE_WIDTH = 12240;
 const PAGE_HEIGHT = 15840;
 const MARGIN = 1440;
-const CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN;  // 9360
 
 const border = { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" };
 const cellBorders = { top: border, bottom: border, left: border, right: border };
@@ -119,11 +115,16 @@ function divider(spacingAfter = 200) {
   });
 }
 
-// ====== Content sections ======
+function code(text, opts = {}) {
+  return new Paragraph({
+    spacing: { before: 100, after: 200 },
+    children: [new TextRun({ text, font: "Consolas", size: opts.size || 18, color: opts.color || COLOR_MUTED })],
+  });
+}
 
 const children = [];
 
-// === STRONA 1: Cover + Executive Summary ===
+// ===== STRONA 1: Cover + Executive Summary =====
 children.push(
   new Paragraph({
     spacing: { before: 1600, after: 400 },
@@ -137,10 +138,18 @@ children.push(
   }),
   new Paragraph({
     alignment: AlignmentType.CENTER,
+    spacing: { after: 200 },
+    children: [new TextRun({
+      text: "Big Caps CEX-First — Top ~5000 Established Tokens",
+      bold: true, size: 28, color: COLOR_PRIMARY, font: FONT,
+    })],
+  }),
+  new Paragraph({
+    alignment: AlignmentType.CENTER,
     spacing: { after: 800 },
     children: [new TextRun({
-      text: "Architektura · Roadmap · Standardy · v1",
-      italics: true, size: 26, color: COLOR_MUTED, font: FONT,
+      text: "Architektura · Roadmap · Standardy · v0.1.0",
+      italics: true, size: 24, color: COLOR_MUTED, font: FONT,
     })],
   }),
   new Paragraph({
@@ -150,39 +159,41 @@ children.push(
   }),
   divider(200),
   H2("Executive Summary"),
-  P("Deep Owl to bot do wykrywania sygnałów breakout w krypto, składający się z trzech komplementarnych modułów:"),
-  bullet("Module 1 — Early Accumulation Detector: wykrywa cichą akumulację tokenów na DEX-ach ZANIM nastąpi pump, łącząc sygnały wolumetryczne, LP depth, holder distribution, buy/sell pressure i opcjonalnie social mentions w jeden ważony score 0-100."),
-  bullet("Module 2 — Fresh Projects Monitor: śledzi świeże launche multi-chain, filtruje rugpulle przez RugCheck.xyz oraz GoPlus Security, i scoruje rokowanie w lifecycle stages 0-4 (od 0-1h do 7-30d)."),
-  bullet("Module 3 — Backtesting Engine: weryfikuje strategie breakout (Bollinger Squeeze, Volume Spike, RSI Divergence) na historycznych danych 5/15-min OHLCV z parent CEX recordera (BTC/ETH/HYPE od 2026-04-08), używając walk-forward analysis dla anti-overfitting."),
+  P("Deep Owl to bot do wykrywania sygnałów akumulacji na big cap tokenach notowanych na CEX-ach. Top 1 priority: established projekty z stażem na giełdach (top ~5000 z CoinMarketCap/CoinGecko po realnym filtrowaniu)."),
+  P("Składa się z dwóch modułów core:"),
+  bullet("Module 1 — Big Cap Accumulation Detector: liczy 7 sygnałów per token co 5 minut (volume profile, funding rate skew, OI buildup, cross-exchange divergence, liquidation imbalance, social sentiment opt, bid/ask imbalance opt). Tier-aware threshold: Tier 1 (top 100) próg 70+, Tier 2 (top 500) 65+, Tier 3 (top 5000) 60+."),
+  bullet("Module 2 — Backtesting Engine: testuje strategie breakout (Bollinger Squeeze, Volume Spike, Funding Squeeze, RSI Divergence) na historycznych klines z REST API CEX (Binance ma do 2017, Bybit od 2020). Walk-forward MANDATORY (anti-overfitting)."),
+  P("Universe budowany z CoinMarketCap + CoinGecko (~10k+ tokenów filtrowane do ~5000 po regułach: market cap > $1M, volume > $100k/24h, listed na min 2 CEX, age > 30 dni, NOT stablecoin, NOT wrapped derivative)."),
   P("Output: Telegram alerts + Web dashboard (FastAPI :8001) + paper trading z symulowanym slippage i fees. Bez realnego kapitału w Fazach 0-6.", { spacingBefore: 100 }),
-  P("Stack: Python 3.11+, asyncio, DuckDB embedded, Pydantic v2, FastAPI. Deployment: lokalne dev (AWS w roadmap v2). Solo dev tool, standalone repo bez koligacji z parent market_maker."),
+  P("Stack: Python 3.11+, asyncio, DuckDB embedded (columnar, partitioned by month), Pydantic v2, FastAPI. Solo dev tool, standalone repo bez koligacji z parent market_maker."),
+  P("OUT OF SCOPE: fresh DEX projects monitor, RugCheck, GoPlus, Pumpfun, Dexscreener, Birdeye — wszystko WYWALONE. Jeśli kiedyś chcemy fresh DEX, to osobny projekt.", { italic: true, color: COLOR_MUTED, spacingBefore: 100 }),
   pageBreak(),
 );
 
-// === STRONA 2: Glossary ===
+// ===== STRONA 2: Glossary =====
 children.push(
   H1("1. Glossary — terminy i skróty"),
-  P("Definicje terminów pojawiających się w tym dokumencie. Pomocne dla recenzentów spoza świata krypto/trading.", { italic: true, color: COLOR_MUTED }),
+  P("Definicje terminów pojawiających się w dokumencie. Pomocne dla recenzentów spoza świata krypto/trading.", { italic: true, color: COLOR_MUTED }),
   dataTable(
     ["Termin", "Definicja"],
     [
-      ["DEX", "Decentralized Exchange — giełda DeFi (np. Raydium, Uniswap, PancakeSwap), brak custody."],
-      ["CEX", "Centralized Exchange — Binance, Coinbase, Bybit. Kapitał trzymany przez giełdę."],
-      ["LP", "Liquidity Pool — pula tokenów dostarczająca płynność na DEX. LP locked = anti-rug zabezpieczenie."],
-      ["OHLCV", "Open / High / Low / Close / Volume — standardowy format świecy (candle) na rynkach."],
+      ["Big cap", "Token z dużą kapitalizacją rynkową, established (zwykle top 5000 by market cap), z stażem na CEX-ach."],
+      ["CEX", "Centralized Exchange — Binance, Bybit, OKX, Coinbase. Kapitał trzymany przez giełdę, REST + WebSocket APIs."],
+      ["DEX", "Decentralized Exchange — Raydium, Uniswap. OUT OF SCOPE w Deep Owl (osobny potencjalny projekt)."],
+      ["OHLCV / Klines", "Open / High / Low / Close / Volume — standardowy format świecy. Klines = nazwa Binance dla candles."],
+      ["Funding rate", "Płatność co 8h między longs i shorts na perpetual futures. Negative funding = shorty płacą longom = za dużo shortów."],
+      ["Open Interest (OI)", "Sumaryczna wartość wszystkich otwartych pozycji futures. Rosnący OI = nowy kapitał napływa."],
+      ["Liquidation", "Wymuszone zamknięcie pozycji futures z powodu margin call. Long liq = długi liquidated (price spadła)."],
       ["TWAP / VWAP", "Time/Volume-Weighted Average Price — mid-price ważony czasem lub wolumenem."],
       ["Slippage", "Różnica między oczekiwaną ceną wejścia a ceną realnie uzyskaną. Rośnie z size i niskim depth."],
-      ["MEV", "Maximal Extractable Value — front-running/sandwich attacks na DEX. Mitigated przez private mempools."],
-      ["Rugpull", "Scam: dev wycofuje płynność lub sprzedaje supply, zostawiając tradera bez wyjścia."],
       ["FDV", "Fully Diluted Valuation — cena × total supply (ile token byłby wart przy pełnej dystrybucji)."],
       ["Walk-forward", "Backtest gdzie train + test okna przesuwają się w czasie — eliminuje look-ahead bias."],
-      ["Sharpe Ratio", "(mean_return / std_return) annualizowany. Risk-adjusted return. >1 dobry, >2 świetny."],
-      ["Max Drawdown", "Największy spadek od peak do trough w equity curve. Krytyczna metryka risk."],
-      ["Score 0-100", "Output Modułu 1 — ważona suma znormalizowanych sygnałów. Próg alertu domyślnie 65."],
-      ["Lifecycle stage", "Klasyfikacja świeżego tokena wg wieku: Stage 0 (0-1h) do Stage 4 (7-30d)."],
-      ["Honeypot", "Token gdzie można kupić ale NIE można sprzedać (ukryty mechanizm w smart contract)."],
-      ["Mint authority", "Solana SPL — kto może drukować nowe tokeny. Renounced = zniesiona = anti-inflation."],
-      ["Pump & Dump", "Skoordynowane pompowanie ceny + masowy sell-off. Cel Modułu 1: złapać akumulację PRZED pump."],
+      ["Sharpe Ratio", "(mean_return / std_return) × sqrt(252). Risk-adjusted return. >1 dobry, >2 świetny."],
+      ["Max Drawdown (DD)", "Największy spadek od peak do trough w equity curve. Krytyczna metryka risk."],
+      ["Score 0-100", "Output Modułu 1 — ważona suma znormalizowanych sygnałów. Próg alertu zależny od tier."],
+      ["Tier (1/2/3)", "Klasyfikacja big cap wg market cap rank: 1=top100, 2=101-500, 3=501-5000."],
+      ["Wyckoff method", "Klasyczna metoda analizy akumulacji/dystrybucji oparta na volume/price relationship."],
+      ["Squeeze (short squeeze)", "Wymuszony wzrost ceny gdy zatłoczone shorty są liquidated, podbijając cenę dalej."],
       ["DuckDB", "Embedded analytics DB (jak SQLite ale columnar). 1-file backup, świetne dla backtest."],
       ["Pydantic v2", "Type-safe modele dla configów + API responses. Walidacja przy parsowaniu."],
       ["Async / asyncio", "Współbieżność I/O w Pythonie. Krytyczne dla pollingu API z rate limitami."],
@@ -192,7 +203,7 @@ children.push(
   pageBreak(),
 );
 
-// === STRONA 3-4: Architecture overview ===
+// ===== STRONA 3-4: Architecture overview =====
 children.push(
   H1("2. Architektura systemu"),
   H2("2.1 Layered architecture"),
@@ -200,43 +211,46 @@ children.push(
   dataTable(
     ["Warstwa", "Odpowiedzialność", "Lokalizacja"],
     [
-      ["Data adapters", "I/O do external API + parent recorder. Normalizacja do common models.", "src/deep_owl/data/"],
-      ["Storage", "DuckDB persistence + schema migrations.", "src/deep_owl/db/"],
-      ["Engine modules", "Logika biznesowa: scoring, lifecycle, backtest.", "src/deep_owl/modules/"],
+      ["Data adapters", "I/O do CMC, CoinGecko, CEX REST APIs + parent recorder reuse. Normalizacja do common models.", "src/deep_owl/data/"],
+      ["Storage", "DuckDB persistence + schema migrations + partitioning dla skali ~25GB/rok.", "src/deep_owl/db/"],
+      ["Engine modules", "Universe builder, accumulation scoring, backtest runner.", "src/deep_owl/modules/"],
       ["Output", "Telegram bot, FastAPI dashboard, paper trader.", "src/deep_owl/output/"],
-      ["CLI", "Entry points: deep-owl discover, backtest, serve.", "src/deep_owl/cli.py"],
-      ["Config", "Pydantic Settings + .env loading.", "src/deep_owl/config.py"],
+      ["CLI", "Entry points: deep-owl universe build, ingest, backtest, detect, run, serve.", "src/deep_owl/cli.py"],
+      ["Config", "Pydantic Settings + .env loading + filter rules + tier thresholds.", "src/deep_owl/config.py"],
     ],
     [1800, 5160, 2400],
   ),
-  H2("2.2 Trzy moduły core"),
-  P("System składa się z trzech równoległych modułów silnika (Module 1, 2, 3), które działają niezależnie ale współdzielą Storage layer (DuckDB):"),
-  bullet("Module 1 (Accumulation Detector): poller co 60s pobiera snapshoty tokenów z Dexscreener/Birdeye → liczy 7 sygnałów per token → ważona suma → score 0-100. Score > 65 generuje rekord w tabeli signals i kandyduje do Telegram alert (z cooldown 6h per token)."),
-  bullet("Module 2 (Fresh Projects Monitor): poller co 5 min po nowych parach Dexscreener → Stage 0 rugpull check (RugCheck/GoPlus) → kandydaci promowani do tabeli fresh_projects → tracking przez 30 dni z growth scoringiem."),
-  bullet("Module 3 (Backtesting Engine): off-line tool. CLI command 'deep-owl backtest --strategy X --symbol Y --days N' agreguje tick data z parent recordera do candles_5m/15m, uruchamia Strategy interface, generuje HTML raport z metrics (Sharpe, max DD, win rate)."),
-  H2("2.3 Data flow — sygnał live"),
-  P("Pełny flow od polling DEX do Telegram alert (dla Module 1):"),
-  bullet("Krok 1: asyncio task pobiera top 500 trending tokens z Dexscreener (rate limit: 60 req/min)."),
-  bullet("Krok 2: per token, normalize response do TokenSnapshot (Pydantic v2 model)."),
-  bullet("Krok 3: upsert do tokens master + insert nowy snapshot (time-series)."),
-  bullet("Krok 4: Module 1 czyta ostatnie 7 dni snapshotów per token, liczy sygnały."),
-  bullet("Krok 5: weighted sum → score. Jeśli score > 65 i token nie ma alert w ostatnich 6h → INSERT do signals."),
-  bullet("Krok 6: alert worker wysyła Telegram message + dashboard subscriber dostaje push."),
-  bullet("Krok 7: opcjonalnie paper trader otwiera simulated position (jeśli ENABLE_AUTO_PAPER w config)."),
+  H2("2.2 Pipeline: Universe → Ingest → Detect"),
+  P("Trzystopniowa pipeline współdzielona przez wszystkie moduły:"),
+  bullet("Etap 1 (Universe Builder, 24h cron): Pobiera ~10k tokenów z CoinGecko + CMC, filtruje do ~5000 realnych według reguł (market cap, volume, age, listings, blacklists). Wynik trafia do tabel tokens + token_listings."),
+  bullet("Etap 2 (Klines/Funding/OI Ingester, continuous): Per CEX (Binance/Bybit/OKX/Coinbase) z respect dla rate limit, pobiera klines 5m + 15m + funding rates + open interest dla aktywnych tokenów. Bulk INSERT do DuckDB partitioned tables."),
+  bullet("Etap 3 (Module 1 Detector, 5min cycle): Iteruje universe, dla każdego tokena liczy 7 sygnałów na podstawie ostatnich 7 dni klines + funding + OI. Score > tier_threshold → INSERT do signals table → alert worker dispatch (Telegram, dashboard)."),
+  H2("2.3 Decyzje architektoniczne (top 9)"),
+  dataTable(
+    ["Decyzja", "Wybór", "Alternatywa", "Rationale"],
+    [
+      ["Język", "Python 3.11+", "Rust dla perf", "Match parent stack, asyncio dla I/O-heavy"],
+      ["DB", "DuckDB + parquet", "Postgres / SQLite", "Embedded, columnar, krytyczne dla skali ~5000×klines"],
+      ["Universe scope", "~5000 filtered z 10k+", "Top 10/50/100", "User explicit: full coverage CMC/CoinGecko"],
+      ["Data primary", "CEX REST API", "Parent recorder tick", "Recorder tylko BTC/ETH/HYPE; REST pokrywa 5000"],
+      ["Exchange priority", "Binance/Bybit/OKX/Coinbase", "All 14 z parent", "~95% global volume, best APIs"],
+      ["Module count", "2 (accumulation + backtest)", "3 (poprzednio + fresh DEX)", "Fresh DEX wywalone z scope"],
+      ["Output", "Sygnały + paper trading", "Auto-trading", "User wybór, niskie ryzyko"],
+      ["Repo", "Standalone", "Worktree parent", "Czysta izolacja od market_maker"],
+      ["Telegram lib", "python-telegram-bot v20", "aiogram", "Większa community"],
+    ],
+    [1700, 1900, 1900, 3860],
+  ),
   pageBreak(),
 );
 
-// === STRONA 4: Diagram flow ===
 children.push(
   H2("2.4 Diagram architektury — schemat blokowy"),
   P("Schemat poniżej pokazuje uproszczone relacje między warstwami i zewnętrznymi systemami.", { italic: true, color: COLOR_MUTED }),
-  new Paragraph({
-    spacing: { before: 200, after: 200 },
-    alignment: AlignmentType.LEFT,
-    children: [new TextRun({
-      text:
+  code(
 `+--------------------------------------------------------------+
 |                  DEEP OWL (standalone repo)                  |
+|           BIG CAPS CEX-FIRST — top ~5000 tokens              |
 +--------------------------------------------------------------+
                               |
         +---------------------+---------------------+
@@ -245,305 +259,292 @@ children.push(
    |  DATA    |         |  ENGINE   |         |  OUTPUT   |
    |  LAYER   |         |  LAYER    |         |  LAYER    |
    +----------+         +-----------+         +-----------+
-   Dexscreener API      Module 1                Telegram bot
-   Birdeye API          (Accumulation)          FastAPI :8001
-   Parent CEX recorder  Module 2                Paper Trader
-   Social scanner       (Fresh)                 (sim PnL)
-   RugCheck + GoPlus    Module 3
-                        (Backtest)
+        |                     |                     |
+   CMC + CoinGecko       Universe Builder      Telegram bot
+   Binance/Bybit/        (filter ~5k z 10k+)   FastAPI :8001
+   OKX/Coinbase REST                           Paper Trader
+   (klines+fund+OI)      Module 1:             (sim PnL)
+   Parent recorder       Accumulation
+   (BTC/ETH/HYPE opt)    Detector
+   Social scanner opt    (CEX big caps)
+                         Module 2:
+                         Backtester
+                         (REST historical)
                               |
                        +------v------+
                        |   STORAGE   |
                        |   DuckDB    |
                        +-------------+
-                       tokens · signals
-                       fresh_projects
-                       paper_trades
-                       candles_5m/15m
+                       tokens · token_listings
+                       klines_5m · klines_15m
+                       funding_history
+                       open_interest
+                       signals · paper_trades
                        backtest_runs`,
-      font: "Consolas", size: 18, color: COLOR_MUTED,
-    })],
-  }),
-  H2("2.5 Decyzje architektoniczne i ich uzasadnienia"),
-  dataTable(
-    ["Decyzja", "Wybór", "Alternatywa", "Rationale"],
-    [
-      ["Język", "Python 3.11+", "Rust dla perf", "Match parent stack, asyncio dla I/O-heavy, Pydantic v2."],
-      ["DB", "DuckDB", "Postgres / SQLite", "Embedded, columnar, świetne dla backtest, 1-file backup, brak serwera."],
-      ["Chains", "Multi-chain agregat", "Per-chain native", "Dexscreener pokrywa 200+ chains, mniej do utrzymania."],
-      ["Output", "Sygnały + paper trading", "Auto-trading", "Wybór userowy, niskie ryzyko, dłuższe testy bez kapitału."],
-      ["Repo", "Standalone", "Worktree parent", "Czysta izolacja od market_maker context bleed."],
-      ["Backtest data", "Parent CEX recorder", "Birdeye paid", "Mamy dane od 2026-04-08, $0 koszt początkowy."],
-      ["Telegram lib", "python-telegram-bot v20", "aiogram", "Większa community, więcej przykładów."],
-    ],
-    [1700, 1900, 1900, 3860],
+    { size: 18 }
   ),
+  H2("2.5 Skala i performance"),
+  P("Universe ~5000 tokenów × ~3 CEX listings × klines 5m to znaczna skala. Estymowany growth:"),
+  dataTable(
+    ["Komponent", "Skala", "Storage estimate"],
+    [
+      ["Universe rebuild", "5000 tokens × 24h refresh", "~5MB/dzień"],
+      ["Klines 5m", "5000 × 3 listings × 288 candles/d", "~13GB/rok (DuckDB columnar 3x compression)"],
+      ["Klines 15m", "Jak wyżej, ÷3", "~4.5GB/rok"],
+      ["Funding (8h cycle)", "5000 × 1 CEX × 3 calls/d", "<1GB/rok"],
+      ["Open Interest (1h)", "5000 × 1 CEX × 24 calls/d", "~3GB/rok"],
+      ["Signals (50 alerts/d)", "Indexed time-series", "<500MB/rok"],
+    ],
+    [2400, 3500, 3460],
+  ),
+  P("Total roczny: ~25GB DuckDB. Po 2-3 latach archiwizacja klines starszych niż 90 dni do parquet (cold storage).", { spacingBefore: 100 }),
+  P("Bottleneck: API rate limits. Binance 6000 weight/min ≈ 6000 calls/min. Top 5000 × 4 CEX = 20k calls — wymaga round-robin między CEX-ami + smart caching + priorytetyzacji per tier (Tier 1 częściej, Tier 3 rzadziej).", { italic: true, color: COLOR_MUTED }),
   pageBreak(),
 );
 
-// === STRONA 5: Data sources matrix ===
+// ===== STRONA 5: Universe Builder =====
 children.push(
-  H1("3. Data sources — matryca źródeł danych"),
-  P("Wszystkie źródła z których czerpie Deep Owl. Per faza wskazane jest, kiedy adapter staje się aktywny."),
-  H2("3.1 Quick reference"),
+  H1("3. Universe Builder — co skanujemy"),
+  H2("3.1 Cel i source"),
+  P("Universe Builder ma odpowiedzieć na pytanie: które ~5000 tokenów monitorować? CMC i CoinGecko mają 10k+ tokenów ale 70% to dead/scam. Filtrujemy aktywne."),
+  bullet("Source primary: CoinGecko /coins/markets (paginated, 30 req/min free wystarczy dla daily refresh ~10k tokens w 1-2 min)"),
+  bullet("Source secondary: CoinMarketCap /v1/cryptocurrency/listings/latest (top 5000 w 1 call, free 333/dzień — wystarczy na cross-check)"),
+  H2("3.2 Filter pipeline (configurable)"),
+  P("Default reguły filtrowania w config.yaml:"),
   dataTable(
-    ["#", "Źródło", "Faza", "Auth", "Rate limit (free)", "Koszt"],
+    ["Reguła", "Default value", "Rationale"],
     [
-      ["1", "Dexscreener", "2", "None", "60 req/min", "$0"],
-      ["2", "Birdeye", "2", "API key", "30 req/min (free)", "$0 free / $99/mo growth"],
-      ["3", "Parent CEX recorder", "3", "filesystem", "—", "$0 (zebrane)"],
-      ["4", "RugCheck.xyz", "5", "None", "~30 req/min", "$0"],
-      ["5", "GoPlus Security", "5", "None", "30 req/min", "$0"],
-      ["6", "Telegram Bot API", "6", "Bot token", "30 msg/s per bot", "$0"],
-      ["7", "Social_media_scanner (parent)", "4 opt", "parent venv", "—", "$0"],
-    ],
-    [600, 2400, 600, 1200, 2160, 2400],
-  ),
-  H2("3.2 Strategie fallback i degradacji"),
-  P("Każdy primary source ma fallback. Jeśli oba zawodzą — sygnał oparty na tym źródle wyłączony, waga rozdystrybuowana do pozostałych:"),
-  bullet("token_overview: dexscreener → birdeye → SKIP (token nie ingestowany)"),
-  bullet("holders top10: birdeye_growth → manual SKIP (free tier ma tylko top 10, growth $99/mo dla pełnej listy)"),
-  bullet("rugpull_solana: rugcheck → manual review queue"),
-  bullet("rugpull_evm: goplus → manual review queue"),
-  bullet("social: parent_scanner → SKIP (waga 0, redystrybucja do innych signals)"),
-  H2("3.3 Sekrety — gdzie trzymać"),
-  P("Wszystkie API keys i tokens TYLKO w pliku .env (gitignored). Template .env.example committed bez wartości:"),
-  bullet("BIRDEYE_API_KEY — Faza 2 (opcjonalne), Faza 4 (mandatory dla holders)"),
-  bullet("TELEGRAM_BOT_TOKEN — Faza 6"),
-  bullet("TELEGRAM_CHAT_ID — Faza 6"),
-  bullet("PARENT_RECORDER_DATA_PATH — pełna ścieżka do D:/Crypto/Claude/data (read-only access)"),
-  P("Brak innych sekretów na obecnym etapie. Dexscreener, RugCheck, GoPlus są zupełnie public.", { color: COLOR_MUTED, italic: true }),
-  pageBreak(),
-);
-
-// === STRONA 6-8: Module 1 deep dive ===
-children.push(
-  H1("4. Module 1 — Early Accumulation Detector"),
-  H2("4.1 Pytanie biznesowe"),
-  P("Czy ten token akumuluje się PRZED pumpem? Cel: złapać moment, w którym whales i smart money cicho budują pozycje, ZANIM publiczność zauważy ruch ceny."),
-  P("Naturalny insight: prawdziwa akumulacja zwykle pokazuje wzrost wolumenu PRZY płaskiej lub lekko spadającej cenie (smart money kupuje od wystraszonych). To jeden z najbardziej kontr-intuicyjnych sygnałów dla retail tradera, ale jeden z najbardziej trafnych historycznie.", { italic: true, color: COLOR_MUTED }),
-  H2("4.2 Sygnały — siedem źródeł evidence"),
-  P("Każdy sygnał zwraca wartość znormalizowaną do [0, 1] (sigmoid od threshold). Następnie ważona suma daje score 0-100:"),
-  dataTable(
-    ["#", "Sygnał", "Metoda", "Threshold", "Waga"],
-    [
-      ["1", "Volume rising on flat/down price", "vol_24h / vol_7d_avg > 2.0 ORAZ price_chg_24h ∈ [-5%, +5%]", ">2.0 + |Δp|<5%", "0.20"],
-      ["2", "LP depth growth", "liquidity_usd[now] - liquidity_usd[24h_ago] > +20%", "+20%", "0.15"],
-      ["3", "Holder count growth", "holders[now] / holders[24h_ago] > 1.15", "+15%", "0.15"],
-      ["4", "Top-10 wallet concentration drop", "top10_pct[now] - top10_pct[24h_ago] < -3pp", "-3pp", "0.10"],
-      ["5", "Buy/sell tx ratio", "buys_1h / sells_1h > 1.3", "1.3", "0.15"],
-      ["6", "Social mention velocity (opt)", "mentions_1h / mentions_24h_avg > 3.0", "3.0", "0.15"],
-      ["7", "CEX bid imbalance (opt)", "bid_volume / ask_volume > 1.5 (orderbook L5)", "1.5", "0.10"],
-    ],
-    [400, 2300, 3960, 1500, 1200],
-  ),
-  P("Suma wag = 1.00. Jeśli sygnał nie jest dostępny (np. token tylko-DEX → CEX bid imbalance niedostępny), jego waga jest redystrybuowana proporcjonalnie do pozostałych aktywnych sygnałów."),
-  H2("4.3 Score formula"),
-  P("Pseudocode scoring procedury:"),
-  new Paragraph({
-    spacing: { before: 100, after: 200 },
-    children: [new TextRun({
-      text:
-`score = 0
-total_weight = 0
-for signal in active_signals:
-    norm = sigmoid((signal.value - signal.threshold) / signal.scale)
-    score += norm * signal.weight
-    total_weight += signal.weight
-score = (score / total_weight) * 100  # normalize to 0-100
-return score`,
-      font: "Consolas", size: 20,
-    })],
-  }),
-  P("sigmoid() używana zamiast clip([0,1]) bo daje miękkie przejście i lepiej współpracuje z weighted sum (sygnał lekko poniżej thresholdu nadal daje 0.4-0.5, nie ostre 0)."),
-  pageBreak(),
-);
-
-children.push(
-  H2("4.4 Universe — co skanujemy"),
-  P("Universe Modułu 1 to zbiór tokenów aktualnie monitorowanych. Compounded z trzech źródeł:"),
-  bullet("Top 500 trending z Dexscreener (endpoint /token-profiles/latest/v1)"),
-  bullet("Nowe pary z liquidity > $10k (cross-reference z Module 2)"),
-  bullet("Tokeny manualnie dodane przez user przez CLI: deep-owl watch <address>"),
-  P("Filtr wykluczeń: blacklisted tokens (tabela tokens.is_blacklisted = TRUE) — automatycznie z rugpull check Modułu 2 lub manualne mute.", { spacingBefore: 100 }),
-  H2("4.5 Cadence — częstotliwość skanowania"),
-  dataTable(
-    ["Komponent", "Interval", "Rationale"],
-    [
-      ["Dexscreener trending poll", "60s", "Wystarczająco dla early-stage; rate limit 60/min."],
-      ["Birdeye top-up (Solana)", "5 min", "Free tier 30/min; oszczędzamy quota dla holders endpoint."],
-      ["Module 1 scoring", "60s (po pollingu)", "Świeży snapshot → świeży score; minimal latency."],
-      ["Telegram alert send", "Async, po INSERT signal", "Nie blokuje pollingu; cooldown 6h per token."],
+      ["min_market_cap_usd", "$1,000,000", "Ekskluzja absolutnych dust tokens"],
+      ["min_volume_24h_usd", "$100,000", "Wymagana realna płynność"],
+      ["min_age_days", "30", "Eliminuje świeże launches (out of scope)"],
+      ["min_cex_listings", "2 z top 20 CEX", "Wymaga realnej adopcji"],
+      ["stablecoin_blacklist", "USDT,USDC,DAI,FDUSD,...", "Stable nie ma volatility do detekcji breakout"],
+      ["wrapped_synthetic_blacklist", "WBTC,stETH,jupSOL,...", "Same risk profile co underlying"],
     ],
     [3000, 2160, 4200],
   ),
-  H2("4.6 Threshold tuning — backtest informuje config"),
-  P("Wagi i thresholds w config.yaml NIE są arbitralne. Każdy threshold ma być dostrojony przez:"),
-  bullet("Backtest sygnałów na 30+ historycznych przypadkach pumpów (z Module 3 candles)"),
-  bullet("Walk-forward: train weights na 60 dniach, test na 14, slide"),
-  bullet("Out-of-sample sprawdzenie czy alerty BYŁY przed pumpami (precision) vs ile pumpów przegapiliśmy (recall)"),
-  bullet("Default values w skeleton są punktem startu — pierwsza iteracja Fazy 4 dostraja je danymi"),
-  H2("4.7 Edge cases i znane ograniczenia"),
-  bullet("False positive: bot trading może symulować akumulację (high volume, brak holder growth → cross-check pomaga)"),
-  bullet("False positive: airdrop farming generuje sztuczny holder growth (filter: holders bez tx history excluded)"),
-  bullet("Missed signal: bardzo szybki pump (5-10 min) — między pollingami; mitigation: zwiększyć cadence dla flagged tokens"),
-  bullet("Missed signal: pump driven czysto przez news (no on-chain accumulation) — out of scope, rozważyć news feed w v2"),
-  bullet("CEX-only token nie ma DEX signals — fallback na CEX-only sygnały (volume profile + bid imbalance)"),
+  H2("3.3 Per-token CEX listing detector"),
+  P("Po filtrowaniu, dla każdego tokena resolveujemy listing per CEX (na których z 4 prioritized CEX-ów jest dostępny i pod jakim symbolem):"),
+  dataTable(
+    ["Token", "Binance", "Bybit", "OKX", "Coinbase"],
+    [
+      ["bitcoin (BTC)", "BTCUSDT", "BTCUSDT", "BTC-USDT", "BTC-USD"],
+      ["ethereum (ETH)", "ETHUSDT", "ETHUSDT", "ETH-USDT", "ETH-USD"],
+      ["solana (SOL)", "SOLUSDT", "SOLUSDT", "SOL-USDT", "SOL-USD"],
+      ["chainlink (LINK)", "LINKUSDT", "LINKUSDT", "LINK-USDT", "LINK-USD"],
+      ["...", "...", "...", "...", "..."],
+    ],
+    [2400, 1740, 1740, 1740, 1740],
+  ),
+  P("Result: tabela token_listings z one-to-many: 1 token → N listings (typowo 1-4 dla top tokens, 0-2 dla niższych tier)."),
+  H2("3.4 Refresh policy"),
+  bullet("Daily rebuild full pipeline (24h cron)"),
+  bullet("Delta detection: nowe tokeny w universe (mark new=TRUE), usunięte (delisted lub spadły poniżej filter — soft delete is_active=FALSE, NIE delete row)"),
+  bullet("Per-token first_seen_at zachowane (audyt: kiedy pojawił się w universe)"),
+  pageBreak(),
+);
+
+// ===== STRONA 6: Data sources matrix =====
+children.push(
+  H1("4. Data sources — matryca"),
+  P("Wszystkie źródła z których czerpie Deep Owl. Per faza wskazane jest kiedy adapter staje się aktywny."),
+  H2("4.1 Quick reference"),
+  dataTable(
+    ["#", "Źródło", "Faza", "Auth", "Rate limit (free)", "Koszt"],
+    [
+      ["1", "CoinGecko API", "2", "key opt", "30 req/min", "$0 / $129 mo Pro"],
+      ["2", "CoinMarketCap", "2", "API key", "333 req/d", "$0 / $79 mo Hobbyist"],
+      ["3", "Binance REST", "3", "None", "6000 weight/min", "$0"],
+      ["4", "Bybit REST", "3", "None", "50 req/sec", "$0"],
+      ["5", "OKX REST", "3", "None", "20 req/2s", "$0"],
+      ["6", "Coinbase REST", "3", "None", "10 req/sec", "$0 (spot only)"],
+      ["7", "Parent recorder", "3 opt", "filesystem", "—", "$0 (BTC/ETH/HYPE)"],
+      ["8", "Telegram Bot API", "6", "Bot token", "30 msg/s", "$0"],
+      ["9", "Social_media_scanner", "5 opt", "parent venv", "—", "$0"],
+    ],
+    [600, 2400, 600, 1200, 2160, 2400],
+  ),
+  H2("4.2 CEX endpoints — common shape"),
+  dataTable(
+    ["Endpoint", "Binance", "Bybit", "OKX", "Coinbase"],
+    [
+      ["Klines (spot)", "/api/v3/klines", "/v5/market/kline", "/api/v5/market/candles", "/products/{id}/candles"],
+      ["Klines (perp)", "/fapi/v1/klines", "/v5/market/kline (linear)", "/api/v5/market/candles (SWAP)", "(brak public)"],
+      ["Funding", "/fapi/v1/fundingRate", "/v5/market/funding/history", "/api/v5/public/funding-rate-history", "(brak public)"],
+      ["Open Interest", "/futures/data/openInterestHist", "/v5/market/open-interest", "/api/v5/public/open-interest", "(brak public)"],
+      ["Symbols meta", "/api/v3/exchangeInfo", "/v5/market/instruments-info", "(per req)", "/products"],
+    ],
+    [2160, 1800, 2200, 1800, 1400],
+  ),
+  H2("4.3 Sekrety — gdzie trzymać"),
+  dataTable(
+    ["Sekret", "Storage", "Wymagany w fazie"],
+    [
+      ["COINMARKETCAP_API_KEY", ".env (gitignored)", "2 (cross-check)"],
+      ["COINGECKO_API_KEY", ".env (gitignored, opt)", "2 opt (Pro tier)"],
+      ["TELEGRAM_BOT_TOKEN", ".env (gitignored)", "6"],
+      ["TELEGRAM_CHAT_ID", ".env (gitignored)", "6"],
+    ],
+    [3500, 3500, 2360],
+  ),
+  P("CEX public APIs (Binance, Bybit, OKX, Coinbase) NIE wymagają auth dla publicznych endpointów (klines, funding, OI).", { spacingBefore: 100 }),
+  pageBreak(),
+);
+
+// ===== STRONA 7-9: Module 1 deep dive =====
+children.push(
+  H1("5. Module 1 — Big Cap Accumulation Detector"),
+  H2("5.1 Pytanie biznesowe"),
+  P("Czy ten established big cap akumuluje się PRZED breakoutem? Cel: złapać moment, w którym smart money cicho buduje pozycje na tokenach z stażem na CEX-ach, ZANIM publiczność zauważy ruch."),
+  P("Insight metodologiczny: prawdziwa akumulacja często pokazuje wzrost wolumenu PRZY płaskiej cenie + negative funding (zatłoczone shorty) + rosnący OI (build-up). Klasyk Wyckoff method dla spot + cross-validate z funding/OI metrics dla futures.", { italic: true, color: COLOR_MUTED }),
+  H2("5.2 Sygnały — siedem źródeł evidence"),
+  P("Każdy sygnał zwraca wartość znormalizowaną do [0, 1] (sigmoid od threshold). Następnie ważona suma daje score 0-100:"),
+  dataTable(
+    ["#", "Sygnał", "Threshold", "Waga", "Skąd dane"],
+    [
+      ["1", "Volume rising on flat/down price", ">2.0 + |Δp|<5%", "0.20", "klines_5m + klines_15m"],
+      ["2", "Funding rate skew (negative)", "<-0.01% przez 24h", "0.20", "funding_history"],
+      ["3", "Open Interest buildup", "+20% vs 7d_avg", "0.15", "open_interest"],
+      ["4", "Cross-exchange volume divergence", ">2x między CEX-ami", "0.15", "klines_5m × N CEX"],
+      ["5", "Liquidation imbalance (long)", "long_liq/short_liq > 2.0", "0.10", "(parent recorder lub CEX REST)"],
+      ["6", "Social mention velocity (opt)", ">3x vs 24h_avg", "0.10", "Social_media_scanner reuse"],
+      ["7", "Bid/ask order book imbalance (opt)", ">1.5x bid", "0.10", "(parent recorder L5)"],
+    ],
+    [400, 2300, 1500, 1000, 4160],
+  ),
+  P("Suma wag = 1.00. Jeśli sygnał nie jest dostępny (np. token spot-only → no funding/OI), waga jest redystrybuowana proporcjonalnie do pozostałych aktywnych sygnałów."),
+  H2("5.3 Score formula"),
+  P("Pseudocode procedury scoring per token:"),
+  code(
+`def score_token(token, klines, funding, oi, social, orderbook):
+    signals = {}
+    if klines:
+        signals['volume_rising'] = sigmoid(volume_factor(klines) - 2.0)
+        signals['cross_exchange_div'] = sigmoid(cross_div(klines) - 2.0)
+    if funding:
+        signals['funding_skew'] = sigmoid(-funding_24h_avg(funding) / 0.0001)
+    if oi:
+        signals['oi_buildup'] = sigmoid((oi_24h - oi_7d_avg) / oi_7d_avg / 0.20)
+    if social:
+        signals['social_velocity'] = sigmoid(social_velocity(social) - 3.0)
+    if orderbook:
+        signals['bid_ask_imbalance'] = sigmoid(bid_pressure(orderbook) - 1.5)
+
+    total_weight = sum(WEIGHTS[k] for k in signals)
+    score = sum(signals[k] * WEIGHTS[k] for k in signals) / total_weight * 100
+    return score, signals  # signals = breakdown JSON`,
+    { size: 18 }
+  ),
   pageBreak(),
 );
 
 children.push(
-  H2("4.8 Output — schemat alert message"),
+  H2("5.4 Tier-aware threshold"),
+  P("Nie wszystkie tokeny są sobie równe. Top 100 ma lepszą data quality, większe moves wymagają wyższych scores. Niskie tiery są bardziej zaszumione — niższy threshold + krótszy cooldown żeby nie przegapić alt sezonu:"),
+  dataTable(
+    ["Tier", "Definicja", "Alert threshold", "Cooldown per token"],
+    [
+      ["Tier 1", "Top 100 by market cap", "70+", "12h"],
+      ["Tier 2", "Top 101-500", "65+", "8h"],
+      ["Tier 3", "Top 501-5000", "60+", "4h"],
+    ],
+    [1200, 3500, 2400, 2260],
+  ),
+  H2("5.5 Sygnały — uzasadnienie metodologiczne"),
+  bullet("Sygnał 1 (volume on flat price): klasyczny smart money pattern. Wysoki volume bez ruchu ceny = smart money kupuje od retail panicked sellers (Wyckoff accumulation)."),
+  bullet("Sygnał 2 (funding skew): specyficzny dla perpetual futures. Negative funding = shorty płacą longom = za dużo shortów = squeeze potential. Backtest historyczny pokazuje że kombinacja negative funding + low volatility często poprzedza pumpy 5-15% w 24-72h."),
+  bullet("Sygnał 3 (OI buildup): rosnący Open Interest przy stabilnej cenie = nowy kapitał napływa do pozycji. W połączeniu z negative funding (Sygnał 2) jednoznacznie wskazuje na build-up shorts → squeeze."),
+  bullet("Sygnał 4 (cross-exchange divergence): smart money często koncentruje aktywność na jednym CEX (najlepsza płynność). Volume na Bybit 2x vs Binance dla danego tokena → coś się dzieje na Bybit."),
+  bullet("Sygnał 5 (long liquidation imbalance): masowe liquidations longów to capitulation/bottom. >2x long liq vs short liq w 24h = weak hands flushed, potencjalnie lepsza relative entry."),
+  bullet("Sygnał 6 (social): opcjonalne. Velocity > 3x = nagły wzrost zainteresowania, często poprzedza retail FOMO."),
+  bullet("Sygnał 7 (bid/ask imbalance): tylko jeśli mamy orderbook snapshot (parent recorder dla BTC/ETH/HYPE). Imbalance > 1.5x na bid side = bid pressure."),
+  H2("5.6 Cadence — częstotliwość skanowania"),
+  dataTable(
+    ["Komponent", "Interval", "Rationale"],
+    [
+      ["Universe rebuild", "24h", "Mało zmienne; delisting/listing rzadkie"],
+      ["Klines pull (5m/15m)", "Per CEX rate limit", "Świeże dane co interval świecy"],
+      ["Funding rates pull", "8h (funding cykl)", "Tyle ile warto"],
+      ["Open Interest pull", "1h", "Wolniej zmienne"],
+      ["Module 1 scoring", "5m (po zamknięciu świecy)", "Świeży snapshot → świeży score"],
+      ["Telegram alert send", "Async po INSERT signal", "Cooldown per tier"],
+    ],
+    [3000, 2160, 4200],
+  ),
+  pageBreak(),
+);
+
+children.push(
+  H2("5.7 Output — schemat alert message"),
   P("Format wiadomości Telegram + wpis w dashboard:"),
-  new Paragraph({
-    spacing: { before: 100, after: 200 },
-    children: [new TextRun({
-      text:
-`[score: 78/100] SOL: $BONK
-DEX: Raydium  Liquidity: $2.1M  Volume 24h: $890k
+  code(
+`[score: 82/100] BINANCE: BTCUSDT
+Tier: 1 (top 100)  ·  $98,432.10  ·  +0.3% (24h)
 Signals:
-  - vol +245% on flat price (+1.2%)
-  - LP +32% (24h)
-  - holders +18%
-  - buy/sell 1h: 1.7x
-Chart: https://dexscreener.com/solana/{pair}
-Alert id: #1234  ·  Cooldown: 6h`,
-      font: "Consolas", size: 20,
-    })],
-  }),
-  P("Dashboard pokazuje to samo + breakdown bar chart per signal + histogram score w czasie + chart price/volume z markerami alertów."),
-  H2("4.9 Persist — co trafia do DuckDB"),
-  P("Każdy run scoring (co 60s) generuje snapshot do tokens, ale wpisy do signals tworzone TYLKO gdy score >= alert_threshold (default 65). Tabela signals zawiera:"),
+  - vol +185% on flat price
+  - funding -0.024% (24h avg, negative = squeeze setup)
+  - OI +28% (vs 7d avg)
+  - cross-exchange: Bybit volume 2.4x vs Binance
+Chart: https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT
+Alert id: #4521  ·  Cooldown: 12h`,
+    { size: 18 }
+  ),
+  P("Dashboard pokazuje to samo + breakdown bar chart per signal + histogram score w czasie + chart price/volume/OI/funding z markerami alertów."),
+  H2("5.8 Persist — schema signals"),
   dataTable(
     ["Kolumna", "Typ", "Opis"],
     [
       ["id", "BIGINT", "Auto-increment PK"],
-      ["token_address", "VARCHAR (FK)", "Chain-prefixed: 'solana:...'"],
+      ["token_id", "VARCHAR (FK)", "CoinGecko ID: 'bitcoin'"],
+      ["primary_exchange", "VARCHAR", "CEX z highest signal score"],
+      ["primary_symbol", "VARCHAR", "CEX-specific symbol"],
       ["timestamp", "TIMESTAMP", "Moment scoring"],
       ["score", "DOUBLE", "0-100 (CHECK constraint)"],
-      ["breakdown", "JSON", "Per-signal raw + normalized values + ważone wkłady"],
-      ["alert_sent", "BOOLEAN", "Czy alert został wysłany (cooldown logic)"],
-      ["alert_channels", "JSON", "Lista kanałów: ['telegram', 'dashboard']"],
+      ["tier", "INTEGER", "1, 2, 3 (CHECK)"],
+      ["breakdown", "JSON", "Per-signal raw + normalized values"],
+      ["alert_sent", "BOOLEAN", "Czy alert wysłany (cooldown logic)"],
+      ["alert_channels", "JSON", "['telegram', 'dashboard']"],
     ],
     [2400, 2160, 4800],
   ),
-  H2("4.10 Roadmap iteracji Modułu 1"),
-  bullet("v0.4.0 (Faza 4): MVP z domyślnymi wagami, backtest scoringu na 30 historycznych pumpach"),
-  bullet("v0.4.1: Tuning wag na podstawie precision/recall"),
-  bullet("v0.4.2: Dodanie sygnału #6 social velocity (parent scanner integration)"),
-  bullet("v0.4.3: Dodanie sygnału #7 CEX bid imbalance (parent recorder cross)"),
-  bullet("v0.5.0+: Per-chain sub-tuning (Solana inny vs EVM inny)"),
+  H2("5.9 Cross-validation Modułu 1 (KRYTYCZNE)"),
+  P("Nie wdrażamy live Modułu 1 z arbitralnymi wagami. Najpierw evidence że historycznie działało:"),
+  bullet("Krok 1: Pull historical klines + funding + OI dla top 100 tokenów (1-2 lata)"),
+  bullet("Krok 2: Replay Module 1 scoring na każdej świecy"),
+  bullet("Krok 3: Compare alerty (score > threshold) vs realne breakouts (price +20% w 24h od alertu)"),
+  bullet("Krok 4: Precision/Recall/F1 per signal weight config"),
+  bullet("Krok 5: Tune wagi (grid search lub Bayesian opt)"),
+  bullet("Krok 6: Walk-forward sprawdzenie out-of-sample"),
+  P("Target: precision > 0.4 (lepsza niż random) na out-of-sample → wdrożenie live. Inaczej iteruj wagi/thresholds.", { italic: true, color: COLOR_MUTED, spacingBefore: 100 }),
   pageBreak(),
 );
 
-// === STRONA 9-10: Module 2 deep dive ===
+// ===== STRONA 10-12: Module 2 (Backtest) deep dive =====
 children.push(
-  H1("5. Module 2 — Fresh Projects Monitor"),
-  H2("5.1 Pytanie biznesowe"),
-  P("Czy ten świeży token rokuje, czy to rugpull? Cel: filtrować szum z setek nowych launches dziennie i znaleźć kandydatów wartych dalszego trackingu w Module 1."),
-  H2("5.2 Lifecycle stages"),
-  P("Każdy świeży token przechodzi przez 5 stages. W każdym wykonujemy inne checks:"),
-  dataTable(
-    ["Stage", "Wiek", "Filter / Action"],
-    [
-      ["0", "0-1h", "Rugpull check (BLOKUJĄCY — fail = exclude z dalszego trackingu)"],
-      ["1", "1-6h", "Initial validation (early growth indicators, 2x re-check rugpull)"],
-      ["2", "6-24h", "Survival window (czy nie umarł? volume nie spadł >70%?)"],
-      ["3", "1-7d", "Growth phase (najbardziej interesujący dla Module 1 handoff)"],
-      ["4", "7-30d", "Maturity check (graduacja do 'established', exit z Fresh universe)"],
-    ],
-    [800, 1200, 7360],
-  ),
-  H2("5.3 Rugpull filter — Stage 0"),
-  P("Token wykluczony jeśli SPEŁNIA którekolwiek z poniższych. Wykorzystujemy RugCheck.xyz dla Solana SPL i GoPlus Security dla EVM tokens."),
-  bullet("Liquidity NOT locked (LP token nie burned ani w lockerze)"),
-  bullet("Mint authority NOT renounced (Solana SPL — dev może wydrukować nową supply)"),
-  bullet("Top-1 holder > 25% supply (concentrated risk)"),
-  bullet("Liquidity < $5,000 USD (manipulable, exit slippage > 50%)"),
-  bullet("Dev wallet sprzedał > 50% holdings w ostatnich 24h (red flag)"),
-  bullet("Honeypot detected (GoPlus is_honeypot=true — można kupić, nie można sprzedać)"),
-  bullet("Buy tax LUB sell tax > 10% (rug-via-fees)"),
-  bullet("Hidden owner LUB can_take_back_ownership flagi (GoPlus)"),
-  H2("5.4 Growth scoring — Stage 1+"),
-  P("Po przejściu Stage 0, token dostaje growth_score 0-100 który jest re-liczone z każdym snapshot:"),
-  new Paragraph({
-    spacing: { before: 100, after: 200 },
-    children: [new TextRun({
-      text:
-`growth_score = w1*volume_velocity      # vol[1h]/vol[24h_avg]
-             + w2*holder_growth         # %change holders 24h
-             + w3*liquidity_stability   # 1 - max_liq_drop_pct
-             + w4*buy_pressure          # buys/sells ratio
-             + w5*social_pickup         # mention velocity (opt)
-default weights: w1..w5 = 0.20 (równe)`,
-      font: "Consolas", size: 20,
-    })],
-  }),
-  pageBreak(),
-);
-
-children.push(
-  H2("5.5 Handoff do Module 1"),
-  P("Tokeny które osiągnęły Stage 2+ i mają growth_score > 60 są automatycznie dodawane do universe Modułu 1. Module 1 wykonuje na nich pełny accumulation scoring (siedem sygnałów)."),
-  P("To dwustopniowa pipeline: Module 2 jest sieve (filtruje 99% śmieci z setek launchów), Module 1 jest decision engine (scoruje obiecujących kandydatów)."),
-  H2("5.6 Persist — fresh_projects schema"),
-  dataTable(
-    ["Kolumna", "Typ", "Opis"],
-    [
-      ["token_address", "VARCHAR (FK)", "Chain-prefixed"],
-      ["snapshot_ts", "TIMESTAMP", "Composite PK z token_address"],
-      ["lifecycle_stage", "INTEGER", "0-4 (CHECK)"],
-      ["growth_score", "DOUBLE", "0-100"],
-      ["rugpull_flags", "JSON", "{is_honeypot, lp_locked, mint_renounced, ...}"],
-      ["rugpull_excluded", "BOOLEAN", "TRUE = nie używamy więcej w Module 1"],
-      ["holder_count", "INTEGER", "Snapshot top-1 i count"],
-      ["liquidity_usd", "DOUBLE", "Total LP liquidity"],
-      ["volume_24h_usd", "DOUBLE", "Volume 24h USD"],
-      ["top1_holder_pct", "DOUBLE", "Concentration metric"],
-    ],
-    [2400, 2160, 4800],
-  ),
-  H2("5.7 Edge cases"),
-  bullet("Migracja z Pumpfun → Raydium (Solana): token zmienia kontrakt — śledzimy oba przez okres przejścia"),
-  bullet("Bridge tokens: ten sam token na różnych chainach — traktujemy jako osobne (different liquidity, different communities)"),
-  bullet("Dev re-launch: ten sam dev wypuszcza wersję 2/3/4 — manual blacklist po N rugpullach (config: max_dev_rug_count=2)"),
-  bullet("Stealth launch (no marketing): może wymknąć się z trending feedu — fallback Birdeye scan all new tokens (Solana)"),
-  H2("5.8 Roadmap iteracji Modułu 2"),
-  bullet("v0.5.0 (Faza 5): MVP z RugCheck + GoPlus, lifecycle stages 0-4, growth score"),
-  bullet("v0.5.1: Dev wallet tracking (cross-token correlation — jeśli dev rugpullował X razy → blacklist)"),
-  bullet("v0.5.2: Pumpfun → Raydium migration tracking (Solana specific)"),
-  bullet("v0.5.3: Bridge token clustering (cross-chain identity)"),
-  pageBreak(),
-);
-
-// === STRONA 11-13: Module 3 deep dive ===
-children.push(
-  H1("6. Module 3 — Backtesting Engine"),
+  H1("6. Module 2 — Backtesting Engine"),
   H2("6.1 Pytanie biznesowe"),
-  P("Czy moja strategia ZADZIAŁAŁABY na historycznych pumpach? Cel: walidacja strategii przed wdrożeniem live, oszacowanie ryzyka (max DD, exposure), tuning parametrów."),
-  P("Backtest zwraca metrics + lista hipotetycznych trades + HTML raport z wykresami. Nie jest to optymalizacja per-se (anti-overfitting przez walk-forward), tylko evidence że strategia ma edge.", { italic: true, color: COLOR_MUTED }),
+  P("Czy moja strategia ZADZIAŁAŁABY na historycznych pumpach big cap? Cel: walidacja strategii przed wdrożeniem live, oszacowanie ryzyka (max DD, exposure), tuning parametrów."),
+  P("Backtest zwraca metrics + lista hipotetycznych trades + HTML raport z wykresami. Anti-overfitting przez walk-forward analysis MANDATORY.", { italic: true, color: COLOR_MUTED }),
   H2("6.2 Komponenty"),
   dataTable(
     ["Plik", "Rola"],
     [
-      ["backtest/candles.py", "Aggregator: czyta tick zst z parent recordera, buduje OHLCV 5/15m, zapisuje do DuckDB"],
+      ["backtest/candles.py", "Pull historical klines z CEX REST (Binance ma do 2017, Bybit od 2020)"],
+      ["backtest/universe.py", "Wybór tokenów do backtestu (subset z universe builder, top_100/500/5000)"],
       ["backtest/strategies/base.py", "Strategy interface (Protocol): warmup_bars + on_bar"],
       ["backtest/strategies/breakout_consolidation.py", "Bollinger Squeeze + volume confirmation"],
       ["backtest/strategies/volume_spike.py", "vol > 3x SMA20 + close > prev high"],
+      ["backtest/strategies/funding_squeeze.py", "negative funding + price consolidation → long entry"],
       ["backtest/strategies/rsi_divergence.py", "RSI oversold + bullish divergence"],
-      ["backtest/slippage.py", "Linear slippage model: base_bps + (size/liquidity)*impact"],
-      ["backtest/fees.py", "Per-exchange fee table"],
+      ["backtest/slippage.py", "Linear slippage model"],
+      ["backtest/fees.py", "Per-CEX fee table"],
       ["backtest/metrics.py", "Sharpe, Sortino, Calmar, max DD, win rate, exposure time"],
-      ["backtest/engine.py", "Walk-forward runner — train/test windows + slide"],
+      ["backtest/engine.py", "Walk-forward runner"],
     ],
     [3000, 6360],
   ),
   H2("6.3 Strategy interface"),
-  P("Strategy implementuje Protocol z dwoma metodami. Dzięki temu można dodawać własne strategie bez zmiany engine."),
-  new Paragraph({
-    spacing: { before: 100, after: 200 },
-    children: [new TextRun({
-      text:
+  code(
 `class Strategy(Protocol):
     name: str
     params: dict[str, Any]
@@ -560,9 +561,8 @@ children.push(
   stop_loss_pct: float,
   take_profit_pct: float,
   max_hold_bars: int }`,
-      font: "Consolas", size: 18,
-    })],
-  }),
+    { size: 18 }
+  ),
   pageBreak(),
 );
 
@@ -575,32 +575,25 @@ children.push(
   bullet("Out-of-sample: zawsze ≥ 30% total dataset"),
   bullet("Final score = średnia metrics z wszystkich test windows"),
   H2("6.5 Slippage model"),
-  P("Realistyczny model wpływa na trafność backtestu. Linear approximation:"),
-  new Paragraph({
-    spacing: { before: 100, after: 200 },
-    children: [new TextRun({
-      text:
-`slippage_bps = base_bps + (size_usd / liquidity_usd) * 10000 * impact_factor
+  P("Dla CEX big caps (high liquidity), slippage jest niski. Linear model:"),
+  code(
+`slippage_bps = base_bps + (size_usd / volume_5m_usd) * 10000 * impact_factor
 
-defaults:
-  base_bps = 5      (0.05% — bid/ask spread crossing)
-  impact_factor = 2.0  (size 1% liquidity = 200 bps slippage)`,
-      font: "Consolas", size: 20,
-    })],
-  }),
-  H2("6.6 Fees per exchange"),
+defaults dla CEX:
+  base_bps = 2     (0.02% — bid/ask spread crossing dla top tokens)
+  impact_factor = 1.5  (size 1% rolling 5m volume = ~150 bps slippage)`,
+    { size: 18 }
+  ),
+  H2("6.6 Fees per CEX"),
   dataTable(
-    ["Exchange / DEX", "Fee taker", "Notes"],
+    ["Exchange", "Spot fee taker", "Futures fee taker", "Notes"],
     [
-      ["Binance", "0.10%", "VIP 0 (default); może być niższe z BNB discount"],
-      ["Bybit", "0.10%", "Standard"],
-      ["OKX", "0.10%", "Standard"],
-      ["Coinbase", "0.40%", "Higher than Asian peers"],
-      ["Raydium (Solana)", "0.25%", "Pool fee — czasem 0.30% dla low-liq"],
-      ["Jupiter aggregator", "0.10-0.30%", "Variable per route"],
-      ["Uniswap V3", "0.05-1.00%", "Per-pool tier"],
+      ["Binance", "0.10%", "0.040%", "VIP 0; może być niższe z BNB discount"],
+      ["Bybit", "0.10%", "0.060%", "Standard"],
+      ["OKX", "0.10%", "0.050%", "Standard"],
+      ["Coinbase", "0.40%", "(brak public futures)", "Spot only"],
     ],
-    [3000, 1800, 4560],
+    [2400, 2160, 2400, 2400],
   ),
   H2("6.7 Metryki — co wychodzi z backtestu"),
   dataTable(
@@ -608,9 +601,9 @@ defaults:
     [
       ["Win rate", "wins / total_trades", ">50%"],
       ["Avg PnL", "mean(trade_pnl_pct)", "Positive po fees"],
-      ["Total PnL", "sum(trade_pnl_usd)", "Asbolutny zysk"],
+      ["Total PnL", "sum(trade_pnl_usd)", "Absolute zysk"],
       ["Sharpe", "mean(ret) / std(ret) * √252 (annualized)", ">1 (>2 świetne)"],
-      ["Sortino", "Jak Sharpe, denominator = downside std", ">1.5"],
+      ["Sortino", "Jak Sharpe, denom = downside std", ">1.5"],
       ["Calmar", "annualized_return / max_drawdown", ">2"],
       ["Max DD", "max(peak - trough) / peak", "<25% pref."],
       ["Max DD duration", "Bars between peak and recovery", "Krótko = lepsze"],
@@ -624,8 +617,17 @@ defaults:
 
 children.push(
   H2("6.8 Universe backtestu"),
-  P("Faza 3 (start): BTC, ETH, HYPE w wariantach USDT/USDC. Mamy parent recorder dane od 2026-04-08, więc na start dostajemy ~30+ dni live data. Walk-forward na 60+14 wymaga dłuższego dataset, więc Faza 3 ograniczona do prostszych testów (60 dni full = niemożliwe początkowo, używamy 30+5 jako compromise, ekspand z czasem)."),
-  P("Faza 3+ (extension): top-50 alts po dodaniu Birdeye historical (paid tier $99/mo growth) lub Coingecko historical CSV downloads (free, gorsza granularity). To staje się dostępne gdy mamy potwierdzoną wartość Modułu 1."),
+  P("Faza 4 start: top 100 tokenów (manageable scale, dobre data quality, ~3-5 lat history dla większości). Następnie ekspansja:"),
+  dataTable(
+    ["Universe size", "Faza", "Tokens", "Estimated klines", "Backtest time/strategy"],
+    [
+      ["top_100", "4 (start)", "100", "~150M (5m × 1y × 3 CEX)", "<5 min"],
+      ["top_500", "4+", "500", "~750M", "~30 min"],
+      ["top_5000", "4++", "5000", "~7.5B", "~5h (parallel)"],
+      ["custom", "—", "user-defined", "varies", "varies"],
+    ],
+    [1500, 800, 1000, 3000, 3060],
+  ),
   H2("6.9 HTML report — co user widzi"),
   P("Każdy backtest run produkuje samodzielny HTML plik z plotly wykresami. Zawiera:"),
   bullet("Equity curve (skumulowany PnL w czasie)"),
@@ -636,50 +638,46 @@ children.push(
   bullet("Metrics panel (wszystkie z 6.7)"),
   bullet("Strategy params used (full reproducibility)"),
   bullet("Walk-forward windows breakdown"),
-  H2("6.10 Backtest Modułu 1 sygnałów"),
-  P("Ważny use-case: backtest NIE strategii price-action, ale sygnałów Modułu 1. Pytanie: czy gdyby Moduł 1 działał historycznie, alerty BYŁY przed pumpami?"),
-  bullet("Krok 1: Reconstruct historyczne snapshoty (potrzebujemy zapis Birdeye/Dexscreener — to wymaga prowadzenia własnego recordera DEX podobnie jak parent ma CEX)"),
-  bullet("Krok 2: Replay Module 1 na tych snapshotach"),
-  bullet("Krok 3: Compare alerty vs realne pumpy (pump = price +30% w 24h od alertu)"),
-  bullet("Krok 4: Precision/Recall/F1 score Modułu 1"),
-  P("Caveat: w Fazie 3 nie mamy własnego DEX recordera, więc backtest sygnałów ograniczony do top-tokens które są na CEX (gdzie mamy parent data). Pełen DEX backtest wymaga dodania DEX recordera w v2 roadmap."),
-  H2("6.11 Roadmap iteracji Modułu 3"),
-  bullet("v0.3.0 (Faza 3): Candle aggregator + 3 strategie + walk-forward + HTML reports"),
-  bullet("v0.3.1: Dodatkowe metrics (Calmar, Information Ratio, Tail Ratio)"),
-  bullet("v0.3.2: Vectorbt integracja jako alternative engine (perf comparison)"),
-  bullet("v0.3.3: Multi-symbol portfolio backtests (basket strategies)"),
+  bullet("Per-token breakdown (które tokeny dawały najwięcej PnL, które najgorsze)"),
+  H2("6.10 Strategie — overview"),
+  bullet("breakout_consolidation: Bollinger Bands squeeze (band width < 30 percentile) + close > upper band z volume > SMA20×1.5. Long entry, stop 5% poniżej entry, target 15%."),
+  bullet("volume_spike: vol > 3x SMA20 + close > 5d high. Entry confirmed by next bar > entry. Trailing stop 7%."),
+  bullet("funding_squeeze: avg funding 24h < -0.005% + price w bands ±3% przez 12h + OI rosnący. Long entry, stop 4%, target 12%."),
+  bullet("rsi_divergence: RSI(14) < 30 z bullish divergence (price lower low + RSI higher low w ciągu 20 bars). Long entry, stop 6%, target 18%."),
+  H2("6.11 Backtest Modułu 1"),
+  P("Cross-validation Modułu 1 to drugi tryb backtestu (patrz 5.9). Replay scoring na historical data, pomiar precision/recall sygnałów vs realne breakouts."),
   pageBreak(),
 );
 
-// === STRONA 14: Paper Trading ===
+// ===== STRONA 13: Paper Trading =====
 children.push(
   H1("7. Paper Trading layer"),
   H2("7.1 Cel i zakres"),
-  P("Paper trading symuluje rzeczywiste wejścia/wyjścia w bazie danych BEZ dotykania realnego kapitału. Pozwala walidować strategie i Module 1 sygnały na real-time data, ale bez ryzyka. Decyzja userowa potwierdzona w Fazie 0 — żaden real wallet nie jest częścią scope Fazy 0-6."),
+  P("Paper trading symuluje rzeczywiste wejścia/wyjścia w bazie danych BEZ dotykania realnego kapitału. Pozwala walidować strategie i sygnały Modułu 1 na real-time data, ale bez ryzyka. Decyzja userowa potwierdzona w Fazie 0."),
   H2("7.2 Architektura"),
   P("Worker subskrybuje INSERT do tabeli signals. Gdy nowy signal score > config.auto_paper_threshold (default: disabled, opt-in):"),
-  bullet("Pull current price + liquidity z Dexscreener (best-effort fresh)"),
+  bullet("Pull current price + 5m volume z CEX REST (best-effort fresh)"),
   bullet("Compute size_usd z portfolio config (default: 1% capital, max $100 per trade)"),
   bullet("Apply slippage: entry_price = current_price * (1 + slippage_bps/10000)"),
-  bullet("Apply fee: fee_usd = size_usd * fee_pct (per dex from fees.py)"),
+  bullet("Apply fee: fee_usd = size_usd * fee_pct (per CEX from fees.py)"),
   bullet("INSERT do paper_trades z status='open'"),
   H2("7.3 Exit logic"),
   P("Trade jest zamknięty gdy któraś z czterech reguł zachodzi:"),
-  bullet("stop_loss: cena spadła o X% od entry (default 8%)"),
-  bullet("take_profit: cena wzrosła o Y% od entry (default 25%)"),
+  bullet("stop_loss: cena spadła o X% od entry (default 5%)"),
+  bullet("take_profit: cena wzrosła o Y% od entry (default 15%)"),
   bullet("time_stop: trade open dłużej niż max_hold_hours (default 48h)"),
   bullet("manual: user zamknął przez CLI lub dashboard"),
   H2("7.4 PnL accounting"),
   P("Zamknięcie wpisuje exit_ts, exit_price, pnl_usd, pnl_pct, close_reason. Cumulative metrics w dashboardzie liczone on-the-fly z agregacji tabeli paper_trades."),
   H2("7.5 Co NIE robi paper trader"),
   bullet("NIE łączy się z real wallet (brak private keys w systemie)"),
-  bullet("NIE wykonuje real swaps (brak Web3 / Jupiter / Uniswap router integration)"),
-  bullet("NIE zarządza real portfolio (brak rebalancing real assets)"),
-  bullet("NIE retoryczna ochrona MEV (paper = brak ryzyka MEV; w v2 jeśli auto-trading → flashbots/jito)"),
+  bullet("NIE wykonuje real swaps (brak Web3 integration)"),
+  bullet("NIE zarządza real portfolio"),
+  bullet("NIE retoryczna ochrona MEV (paper = brak ryzyka MEV)"),
   pageBreak(),
 );
 
-// === STRONA 15: Output layer ===
+// ===== STRONA 14-15: Output layer =====
 children.push(
   H1("8. Output layer — Telegram + Dashboard"),
   H2("8.1 Telegram bot"),
@@ -691,25 +689,30 @@ children.push(
       ["/start", "Register chat (zapisz chat_id w config)"],
       ["/help", "Lista komend"],
       ["/signals [N]", "Ostatnie N (default 10) sygnałów z Modułu 1"],
-      ["/fresh [stage]", "Top fresh projects, opcjonalnie filter stage"],
+      ["/top", "Top tokeny wg score w ostatnich 24h"],
       ["/paper", "Open positions + cumulative PnL summary"],
       ["/backtest <strategy>", "Uruchom backtest na default universe (async, link do raportu)"],
       ["/mute <token>", "Wycisz alerty dla token na 12h"],
-      ["/unmute <token>", "Anuluj mute"],
+      ["/tier <1|2|3>", "Change min alert tier (silenced for tier above)"],
     ],
     [3000, 6360],
   ),
   H3("Rate limiting & dedup"),
-  bullet("Cooldown 6h per token (config) — ten sam token nie alertowany dwa razy w krótkim czasie"),
-  bullet("Daily cap 20 alerts (config) — chroni przed alert fatigue"),
+  bullet("Cooldown per token zależny od tier (12h/8h/4h)"),
+  bullet("Daily cap 30 alerts (config)"),
   bullet("Telegram bot rate limit: 30 msg/s globalny — implementujemy queue + throttle"),
   H2("8.2 FastAPI dashboard"),
-  P("Local-only (bind 127.0.0.1:8001), zero auth (jest local-only). Pięć zakładek:"),
+  P("Local-only (bind 127.0.0.1:8001), zero auth. Sześć zakładek:"),
+  pageBreak(),
+);
+
+children.push(
   dataTable(
     ["Zakładka", "Zawartość"],
     [
-      ["Live Signals", "Tabela auto-refresh (HTMX 30s) + filtry score/chain/timestamp"],
-      ["Fresh Projects", "Lista z filtrem lifecycle stage + sortowanie growth_score"],
+      ["Universe", "Przegląd ~5000 tokenów z filtrami (tier, market cap, listing count, age)"],
+      ["Live Signals", "Tabela auto-refresh (HTMX 30s) + filtry score/tier/timestamp"],
+      ["Top Movers", "Top 50 tokenów wg recent score (ostatnie 24h)"],
       ["Paper Trading", "Open positions + closed trades + cumulative PnL chart"],
       ["Backtests", "Historia runs + uruchamianie nowych + inline HTML reports"],
       ["Settings", "View-only display config.yaml + env var status (without values)"],
@@ -718,49 +721,68 @@ children.push(
   ),
   H2("8.3 Stack frontend"),
   P("Minimalistyczny — Jinja2 templates + HTMX dla reactivity + Plotly dla charts. Brak React/Vue/Svelte (overkill dla solo dev tool)."),
+  H2("8.4 Mockup screen — Live Signals tab"),
+  code(
+`+--------------------------------------------------------------+
+| Deep Owl · Live Signals · Auto-refresh 30s                  |
++--------------------------------------------------------------+
+| [Tier: All v]  [Score: >=60 v]  [Last: 1h v]   refresh now  |
++--------------------------------------------------------------+
+| Time   | Token     | Tier | Score | Signals (top 3)         |
++--------+-----------+------+-------+-------------------------+
+| 14:35  | $BTC      |   1  |  82   | vol+185% / fund-0.024 / OI+28% |
+| 14:30  | $LINK     |   1  |  75   | vol+167% / cross-ex 2.1x       |
+| 14:28  | $JTO      |   2  |  71   | vol+220% / fund-0.018          |
+| 14:25  | $TIA      |   2  |  68   | OI+45% / liq imbalance 3x      |
+| 14:20  | $AVAX     |   1  |  73   | vol+195% / cross-ex 2.4x       |
++--------+-----------+------+-------+-------------------------+
+| [load more 50]                                               |
++--------------------------------------------------------------+`,
+    { size: 16 }
+  ),
   pageBreak(),
 );
 
-// === STRONA 16-17: Phase plan ===
+// ===== STRONA 16-17: Phase plan =====
 children.push(
   H1("9. Phase plan — roadmap implementacji"),
   H2("9.1 Six fazes overview"),
   dataTable(
     ["Faza", "Cel", "Deliverable", "Tag"],
     [
-      ["0 (NOW)", "Plan-as-docs", "20p DOCX + 8 MD + skeleton + git init", "v0.0.0"],
-      ["1", "Repo bootstrap", "venv + deps + DB client + logger + CLI stub", "v0.1.0"],
-      ["2", "DEX adapters", "Dexscreener + Birdeye async clients", "v0.2.0"],
-      ["3", "Backtesting", "Candles + 3 strategie + walk-forward + reports", "v0.3.0"],
-      ["4", "Module 1", "Accumulation Detector + scoring + alert gating", "v0.4.0"],
-      ["5", "Module 2", "Fresh Monitor + RugCheck + GoPlus + lifecycle", "v0.5.0"],
-      ["6", "Output", "Telegram + Dashboard + Paper Trader", "v0.6.0/v1.0.0"],
+      ["0 (DONE)", "Plan-as-docs + pivot v0.1.0", "20p DOCX + 8 MD + skeleton + git init + tag", "v0.0.0 / v0.1.0"],
+      ["1", "Repo bootstrap", "venv + deps + DB client + logger + CLI stub", "v0.2.0"],
+      ["2", "Universe Builder", "CMC + CoinGecko clients + filter pipeline + listing resolver", "v0.3.0"],
+      ["3", "CEX REST adapters", "Binance/Bybit/OKX/Coinbase clients (klines+funding+OI)", "v0.4.0"],
+      ["4", "Backtesting", "Candles + 4 strategies + walk-forward + reports", "v0.5.0"],
+      ["5", "Module 1", "Big Cap Accumulation Detector + cross-validation historical", "v0.6.0"],
+      ["6", "Output", "Telegram + Dashboard + Paper Trader", "v0.7.0/v1.0.0"],
     ],
     [800, 1800, 5160, 1600],
   ),
   H2("9.2 Definition of Done — per faza"),
   bullet("All tests pass: pytest -x dev, pytest tests/ pre-commit"),
-  bullet("Coverage >= 80% (jeśli dotyka kodu hot-path)"),
+  bullet("Coverage ≥ 80% (jeśli dotyka kodu hot-path)"),
   bullet("ruff + mypy clean"),
   bullet("PHASES.md checkbox flipped"),
   bullet("CHANGELOG.md zaktualizowany"),
   bullet("Tag git v0.{N}.0"),
   bullet("Demo lokalnie (gdzie możliwe)"),
-  H2("9.3 Estymacja timeline (orientacyjna)"),
+  H2("9.3 Estymacja timeline"),
   dataTable(
     ["Faza", "Effort", "Calendar"],
     [
-      ["0", "1-2 dni", "Teraz"],
+      ["0", "Done (1-2 dni)", "Teraz"],
       ["1", "3-5 dni", "+1 tydzień"],
       ["2", "5-7 dni", "+2 tygodnie"],
-      ["3", "10-14 dni", "+1 miesiąc"],
+      ["3", "7-10 dni", "+3 tygodnie"],
       ["4", "10-14 dni", "+1.5 miesiąca"],
-      ["5", "7-10 dni", "+2 miesiące"],
+      ["5", "10-14 dni", "+2 miesiące"],
       ["6", "10-14 dni", "+3 miesiące"],
     ],
     [1200, 2400, 5760],
   ),
-  P("Powyższe są estimates dla solo dev pełen czas. Rzeczywista calendar zależy od dostępności + nieprzewidzianych blockerów (API changes, edge cases)."),
+  P("Powyższe są estimates dla solo dev pełen czas. Rzeczywista calendar zależy od dostępności + nieprzewidzianych blockerów (API changes, edge cases, scale challenges przy 5000 tokenów)."),
   pageBreak(),
 );
 
@@ -770,45 +792,48 @@ children.push(
     ["Faza", "Risk", "Mitigation"],
     [
       ["1", "Pre-commit hooks za wolne", "Split: ruff/mypy w pre-commit, pytest w pre-push only"],
-      ["2", "Dexscreener API change/rate limit", "Birdeye fallback już w Fazie 2; cache 60s; monitoring 429"],
-      ["3", "Parent recorder format change", "Pin parent reader version; integration tests na sample data"],
-      ["3", "Backtest overfitting", "Walk-forward MANDATORY; out-of-sample >= 30%"],
-      ["4", "False positive alerts", "Conservative defaults + per-token mute + manual review"],
-      ["5", "Rugpull API false-positives", "Cross-check RugCheck + GoPlus; manual override"],
-      ["6", "Telegram spam", "Cooldown 6h + daily cap 20"],
+      ["2", "CMC free tier 333/d za niski", "CoinGecko jako primary, CMC jako monthly cross-check"],
+      ["2", "Universe size > expected (10k+)", "Filter aggressive defaults; tune po pierwszym rebuild"],
+      ["3", "CEX rate limit hits", "Round-robin 4 CEX + smart cache + per-tier priorytetyzacja"],
+      ["3", "Coinbase brak public futures", "Coinbase = spot only universe coverage"],
+      ["4", "Backtest overfitting", "Walk-forward MANDATORY, out-of-sample ≥ 30%"],
+      ["4", "Storage > 100GB szybciej niż przewidywano", "Partition by month + archive >90 dni do parquet"],
+      ["5", "False positive alerts", "Conservative defaults + per-token mute + cross-validation precision target"],
+      ["6", "Telegram spam", "Cooldown per tier + daily cap 30"],
     ],
     [800, 3000, 5560],
   ),
   H2("9.5 Anti-regression checklist"),
-  P("Wymuszany przed każdym tag (manual + automated)"),
+  P("Wymuszany przed każdym tag (manual + automated):"),
   bullet("Pre-commit hook: pytest -x + ruff check"),
   bullet("Pre-faza-N+1: pytest tests/ (full) + manual demo Fazy N (CLI smoke test)"),
-  bullet("Każdy ADR ma sekcję 'What it would break if reversed' (impact transparency)"),
+  bullet("Każdy ADR ma sekcję 'What it would break if reversed'"),
   bullet("CHANGELOG.md changes diff > 0 lines (zmuszamy do udokumentowania)"),
   bullet("Tag tylko jeśli git status clean (no uncommitted)"),
-  H2("9.6 Co NIE jest w roadmapie"),
-  P("Out of scope dla całego planu (Faza 0-6), nie tylko bieżącej:"),
-  bullet("Real wallet integration / private keys / on-chain transaction execution"),
-  bullet("Per-chain native RPC adapters (Solana web3.py, Ethereum eth_call)"),
-  bullet("Mobile app"),
-  bullet("Multi-user / SaaS layer"),
-  bullet("AWS deploy w Fazach 0-6 (lokalne dev — parent ma już AWS Tokyo dla recordera)"),
-  bullet("Powielanie funkcjonalności parent market_maker (live MM, spread reversion)"),
-  P("Wszystkie powyższe to potencjalna v2 — wymagają osobnej decyzji business + budget + ryzyko.", { italic: true, color: COLOR_MUTED }),
+  H2("9.6 Co NIE jest w roadmapie (out of scope całkowicie)"),
+  bullet("Fresh DEX projects monitor (Pumpfun, Raydium new pairs, Birdeye new tokens)"),
+  bullet("Rugpull detection (RugCheck.xyz, GoPlus Security)"),
+  bullet("DEX adapters (Dexscreener, Birdeye, Jupiter, Uniswap)"),
+  bullet("Per-chain native RPC (Solana web3.py, Ethereum eth_call)"),
+  bullet("Real wallet / private keys / on-chain transactions"),
+  bullet("Mobile app, multi-user SaaS"),
+  bullet("AWS deploy w Fazach 0-6 (lokalne dev)"),
+  bullet("Powielanie funkcjonalności parent market_maker"),
+  P("Wszystkie powyższe to potencjalna v2 — wymagają osobnej decyzji. Fresh DEX = OSOBNY projekt nie Deep Owl.", { italic: true, color: COLOR_MUTED, spacingBefore: 100 }),
   pageBreak(),
 );
 
-// === STRONA 18: Tech stack + DB schema ===
+// ===== STRONA 18: Tech stack + DB schema =====
 children.push(
   H1("10. Tech stack + DB schema"),
   H2("10.1 Stack — co i dlaczego"),
   dataTable(
     ["Warstwa", "Wybór", "Uzasadnienie"],
     [
-      ["Język", "Python 3.11+", "Match parent stack, asyncio dla I/O-heavy DEX polling"],
+      ["Język", "Python 3.11+", "Match parent stack, asyncio dla I/O-heavy CEX polling"],
       ["Async", "asyncio + aiohttp", "Standard parent"],
       ["API framework", "FastAPI + uvicorn", "Parent uses it, dashboard reuse pattern"],
-      ["Storage", "DuckDB (file-based)", "Embedded, columnar, 1-file backup, brak serwera"],
+      ["Storage", "DuckDB (file-based)", "Embedded, columnar, krytyczne dla skali"],
       ["Candle agg", "numpy + pyarrow", "Parent uses pyarrow, fast columnar"],
       ["HTTP client", "aiohttp + tenacity", "Standard for rate-limited APIs"],
       ["Telegram", "python-telegram-bot v20+", "Async-native, large community"],
@@ -821,38 +846,37 @@ children.push(
   ),
   H2("10.2 Co NIE używamy (świadome decyzje)"),
   bullet("Postgres / MySQL — overhead serwera, nie potrzebujemy multi-writer"),
-  bullet("Redis — DuckDB + asyncio queue wystarczą do ~1M signals/mo"),
+  bullet("Redis — DuckDB + asyncio queue wystarczą"),
   bullet("Kafka / RabbitMQ — overengineering dla solo dev monolith"),
-  bullet("Docker — lokalne dev na razie (parent ma docker w roadmap, my w v2)"),
-  bullet("Kubernetes — overkill na zawsze (single-node deployment wystarczy)"),
+  bullet("Docker — lokalne dev na razie"),
+  bullet("Kubernetes — overkill na zawsze"),
   bullet("React / Vue / Svelte — Jinja2 + HTMX wystarczą dla dashboard"),
-  H2("10.3 DB schema — tabele"),
+  H2("10.3 DB schema — tabele (v0.1.0)"),
   dataTable(
     ["Tabela", "Klucz główny", "Cel"],
     [
       ["_meta", "key", "Schema version + app metadata"],
-      ["tokens", "token_address", "Master tokens recognized w systemie"],
-      ["signals", "id", "Output Modułu 1 (timestamp, score, breakdown JSON)"],
-      ["fresh_projects", "(token_address, snapshot_ts)", "Time-series state Modułu 2"],
+      ["tokens", "token_id (CoinGecko ID)", "Master tokens recognized"],
+      ["token_listings", "(token_id, exchange, symbol)", "Per-CEX listing per token"],
+      ["klines_5m", "(exchange, symbol, ts)", "OHLCV 5min z REST API CEX"],
+      ["klines_15m", "(exchange, symbol, ts)", "OHLCV 15min"],
+      ["funding_history", "(exchange, symbol, ts)", "Funding rate per 8h cycle"],
+      ["open_interest", "(exchange, symbol, ts)", "OI snapshot per godzinę"],
+      ["signals", "id", "Output Modułu 1 (score + breakdown JSON + tier)"],
       ["paper_trades", "id", "Open + closed positions, simulated PnL"],
-      ["candles_5m", "(exchange, symbol, ts)", "OHLCV 5min aggregated z tick data"],
-      ["candles_15m", "(exchange, symbol, ts)", "OHLCV 15min interval"],
       ["backtest_runs", "id", "Metadata per backtest run + metrics JSON"],
     ],
     [2160, 3000, 4200],
   ),
-  P("Pełen schema: src/deep_owl/db/schema.sql (134 linie SQL z indexes + CHECK constraints + sequences).", { color: COLOR_MUTED, italic: true }),
+  P("Pełen schema: src/deep_owl/db/schema.sql.", { color: COLOR_MUTED, italic: true }),
   pageBreak(),
 );
 
-// === STRONA 19: Repo + file hygiene + git ===
+// ===== STRONA 19: Repo + standards =====
 children.push(
   H1("11. Repo structure + standards"),
   H2("11.1 Repo skeleton (po Fazie 0)"),
-  new Paragraph({
-    spacing: { before: 100, after: 200 },
-    children: [new TextRun({
-      text:
+  code(
 `Breakout_signals/
 ├── .git/                  # standalone repo
 ├── .gitignore             # data/, logs/, .env, venv/, *.duckdb
@@ -869,17 +893,17 @@ children.push(
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── docs/
-│   ├── deep_owl_v1.docx   # ten dokument
+│   ├── deep_owl_v1.docx   # ten dokument (v0.1.0)
 │   └── decisions/         # ADRs
 ├── src/deep_owl/
 │   ├── __init__.py
 │   ├── cli.py             # entry point: deep-owl
 │   ├── config.py
 │   ├── logger.py
-│   ├── db/
-│   ├── data/
-│   ├── modules/
-│   └── output/
+│   ├── db/                # DuckDB client + schema
+│   ├── data/              # CMC, CoinGecko, CEX REST adapters
+│   ├── modules/           # universe, accumulation, backtest
+│   └── output/            # telegram, dashboard, paper_trader
 ├── tests/
 │   ├── unit/
 │   ├── integration/
@@ -887,9 +911,8 @@ children.push(
 └── scripts/
     ├── bootstrap.ps1
     └── generate_docx.js   # generator tego dokumentu`,
-      font: "Consolas", size: 18,
-    })],
-  }),
+    { size: 17 }
+  ),
   H2("11.2 File hygiene — hard limity"),
   dataTable(
     ["Lokalizacja", "Limit", "Action po przekroczeniu"],
@@ -913,48 +936,47 @@ children.push(
   pageBreak(),
 );
 
-// === STRONA 20: Risk register + future ===
+// ===== STRONA 20: Risk + future =====
 children.push(
   H1("12. Risk register + future expansions"),
   H2("12.1 Top risks"),
   dataTable(
     ["Risk", "Likelihood", "Impact", "Mitigation"],
     [
-      ["Dexscreener rate limit / API change", "Medium", "High", "Birdeye fallback, cache 60s, monitoring 429"],
-      ["DuckDB row count > 100M (slow queries)", "Low (rok+)", "Medium", "Partition by month, archive old to parquet"],
-      ["Rugpull filter false-positives", "High", "Medium", "Conservative defaults + manual override per token"],
-      ["Backtest overfitting", "High", "High", "Walk-forward MANDATORY, out-of-sample >= 30%"],
-      ["Telegram bot spam (zbyt dużo alertów)", "Medium", "Low", "Per-token cooldown 6h, daily cap 20"],
+      ["CEX API change/rate limit", "Medium", "High", "Per-CEX fallback (4 priorytetów), monitoring 429"],
+      ["DuckDB > 100GB (slow queries)", "Medium (rok+)", "Medium", "Partition by month, archive starsze >90d do parquet"],
+      ["Backtest overfitting", "High", "High", "Walk-forward MANDATORY, out-of-sample ≥ 30%"],
+      ["False positive alerts (Module 1)", "High", "Medium", "Cross-validation pre-deployment, tier-aware threshold"],
+      ["Telegram bot spam", "Medium", "Low", "Cooldown per tier, daily cap 30"],
       ["CLAUDE.md drift vs reality", "Medium", "Medium", "Co fazę: re-read i update jeśli stale"],
-      ["Birdeye paid tier wymagany za wcześnie", "Medium", "Medium", "Free tier holders top-10 wystarczy do v0.4; growth od v0.5"],
-      ["Parent recorder data outage", "Low", "High (Faza 3+)", "Local backup snapshot przed start backtestu"],
-      ["Solo dev burnout / deprioritization", "Medium", "High", "Phase plan jako commitment device, CHANGELOG jako evidence progress"],
+      ["CMC free tier 333/d niewystarczający", "Medium", "Low", "CoinGecko jako primary, CMC tylko miesięczny cross-check"],
+      ["CoinGecko free 30/min za niski", "Low", "Medium", "Pro tier $129/mo jeśli wymusi (Faza 2 evaluation)"],
+      ["Solo dev burnout", "Medium", "High", "Phase plan jako commitment device, CHANGELOG jako evidence"],
     ],
     [3000, 1300, 1300, 3760],
   ),
-  H2("12.2 Future expansions (v2+, post Fazie 6)"),
-  bullet("Auto-trading: real wallet via Jupiter/Uniswap router + MEV protection (Flashbots/Jito)"),
-  bullet("Per-chain native adapters: Solana web3.py, Ethereum eth_call (lepsza precyzja niż agregator API)"),
-  bullet("Własny DEX recorder (jak parent CEX recorder ale dla DEX) — wymagane dla pełnego backtest sygnałów Modułu 1"),
-  bullet("News feed integration (CryptoPanic, Twitter API v2 paid) — sygnał news-driven pumps"),
+  H2("12.2 Future expansions (v2+)"),
+  bullet("Auto-trading: real wallet via CEX private API (Binance/Bybit/OKX trade endpoint)"),
+  bullet("On-chain analytics integration (Glassnode/Dune/Nansen) — exchange flows, whale wallet tracking"),
+  bullet("News feed integration (CryptoPanic, Twitter API v2 paid)"),
+  bullet("Strategy ensemble: Module 1 score + technical signals + news → meta-classifier"),
+  bullet("Kelly criterion position sizing (zamiast fixed %)"),
   bullet("Multi-user SaaS: per-user portfolio, shared signals, premium tiers"),
   bullet("Mobile push notifications (Pushover, Pushbullet) jako alternatywa Telegram"),
-  bullet("AWS deploy: parent ma AWS Tokyo Lightsail, można zrobić sister deploy dla Deep Owl"),
-  bullet("Backtesting na parach DEX (Birdeye historical paid tier, $99/mo)"),
-  bullet("Strategy ensemble: Module 1 score + technical signals + news score → meta-classifier"),
-  bullet("Kelly criterion position sizing (zamiast fixed %)"),
+  bullet("AWS deploy: parent ma AWS Tokyo Lightsail, sister deploy"),
+  bullet("Fresh DEX monitor jako OSOBNY projekt (Pumpfun, Raydium, Birdeye)"),
   H2("12.3 Wniosek końcowy"),
-  P("Deep Owl jest zaprojektowany jako solo dev tool z naciskiem na: (1) izolacja od parent market_maker context, (2) anti-sprawl docs i kodu, (3) rygor backtestingu z walk-forward, (4) paper trading first / real money never w Fazie 0-6, (5) hard limits na dependencies + file count + LOC żeby zapobiec rozrostowi."),
-  P("Faza 0 produkuje ten dokument + kompletny skeleton repo z własnym CLAUDE.md, 8 MD docs, 33 plikami źródłowymi, gotową strukturą bazy danych i CLI stubem. Implementacja Fazy 1-6 ma wyraźne deliverables i acceptance criteria. Sukces mierzony tagami git i CHANGELOG entries — nie linijkami kodu."),
-  P("End of v1 architecture document.", { italic: true, color: COLOR_MUTED, align: AlignmentType.CENTER, spacingBefore: 400 }),
+  P("Deep Owl v0.1.0 jest big caps CEX-first tool: ~5000 established tokenów z CMC/CoinGecko po filtrowaniu, 4 prioritized CEX-y (Binance/Bybit/OKX/Coinbase) jako primary data source, 2 moduły (accumulation detector + backtester), tier-aware scoring (top 100 strict, top 5000 soft), paper trading first, no real wallet w fazach 0-6."),
+  P("Faza 0 zamknięta dwoma tagami: v0.0.0 (initial DEX-first plan, deprecated) + v0.1.0 (pivot na big caps CEX-first). Faza 1+ to rzeczywista implementacja z wyraźnymi deliverables i acceptance criteria. Sukces mierzony tagami git, CHANGELOG entries, oraz precision/recall Modułu 1 na cross-validation — nie linijkami kodu."),
+  P("End of v0.1.0 architecture document.", { italic: true, color: COLOR_MUTED, align: AlignmentType.CENTER, spacingBefore: 400 }),
 );
 
-// ====== Document config ======
+// ===== Document config =====
 
 const doc = new Document({
   creator: "Deep Owl",
-  title: "Deep Owl - Breakout Signals Bot - Architecture & Roadmap v1",
-  description: "Architektura + roadmap + standardy projektu Deep Owl (Faza 0 deliverable)",
+  title: "Deep Owl - Breakout Signals Bot - Architecture & Roadmap v0.1.0",
+  description: "Architektura + roadmap + standardy projektu Deep Owl (Faza 0 deliverable, big caps CEX-first)",
   styles: {
     default: {
       document: { run: { font: FONT, size: 22 } },
@@ -1006,7 +1028,7 @@ const doc = new Document({
         children: [new Paragraph({
           alignment: AlignmentType.RIGHT,
           children: [new TextRun({
-            text: "Deep Owl · Architecture & Roadmap v1",
+            text: "Deep Owl · Big Caps CEX-First · v0.1.0",
             italics: true, size: 18, color: COLOR_MUTED, font: FONT,
           })],
         })],
@@ -1030,8 +1052,21 @@ const doc = new Document({
 });
 
 const outputPath = path.join(__dirname, "..", "docs", "deep_owl_v1.docx");
+const fallbackPath = path.join(__dirname, "..", "docs", "deep_owl_v0_1_0.docx");
 Packer.toBuffer(doc).then((buffer) => {
-  fs.writeFileSync(outputPath, buffer);
-  console.log(`OK: ${outputPath}`);
-  console.log(`Size: ${buffer.length} bytes`);
+  try {
+    fs.writeFileSync(outputPath, buffer);
+    console.log(`OK: ${outputPath}`);
+    console.log(`Size: ${buffer.length} bytes`);
+  } catch (e) {
+    if (e.code === "EBUSY") {
+      console.warn(`Primary path ${outputPath} is locked — writing to ${fallbackPath} instead`);
+      fs.writeFileSync(fallbackPath, buffer);
+      console.log(`OK (fallback): ${fallbackPath}`);
+      console.log(`Size: ${buffer.length} bytes`);
+      console.log("Zamknij plik deep_owl_v1.docx w Word/edytorze i uruchom ponownie zeby nadpisac primary path.");
+    } else {
+      throw e;
+    }
+  }
 });

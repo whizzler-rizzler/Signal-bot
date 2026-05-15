@@ -25,11 +25,15 @@ coverage.xml
 *.duckdb.wal
 *.duckdb.tmp
 
-# Data + logs (NEVER commit)
-data/
-logs/
-cache/
-artifacts/
+# Data + logs (NEVER commit) — root-anchored to avoid matching src/deep_owl/data/
+/data/
+/logs/
+/cache/
+/artifacts/
+
+# Word lock files
+~$*.docx
+~$*.doc
 
 # Backtest outputs
 reports/

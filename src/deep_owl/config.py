@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     )
 
     # === API keys (z env) ===
-    birdeye_api_key: str = Field(default="", description="Birdeye API key (faza 2+)")
+    coinmarketcap_api_key: str = Field(default="", description="CoinMarketCap API key (faza 2)")
+    coingecko_api_key: str = Field(default="", description="CoinGecko Pro key (faza 2 opt)")
     telegram_bot_token: str = Field(default="", description="Telegram bot token (faza 6)")
     telegram_chat_id: str = Field(default="", description="Telegram chat id (faza 6)")
 
