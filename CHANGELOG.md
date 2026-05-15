@@ -6,6 +6,45 @@ Wszystkie zmiany w projekcie. Format: [Keep a Changelog](https://keepachangelog.
 
 (Praca w toku — kandyduje do następnego tagu)
 
+## [0.1.4] — 2026-05-15 — Branch hygiene infra + project-specific tier/agent routing
+
+User feedback: "czy zaimplementowałeś już zasady zarządzania gałęziami oraz tree z global rules? Czy są agenci tutaj wrzuceni i krytycy i rozmiary zmian S/M/L?"
+
+Odpowiedź: NIE — implementuję teraz pełen checklist.
+
+### Added — Branch management infrastructure
+- `branches/_template.md` — template MANDATORY dla każdego nowego branch
+- `branches/main.md` — metadata main branch
+- `scripts/check_session_sync.py` — session start sync check (multi-branch awareness, stale detect)
+- `scripts/branch_audit.py` — daily audit (>3 active warning, >5 mandatory cleanup)
+- `scripts/pre_deploy_audit.py` — BLOCK gdy stale state lub uncommitted (override `--force --reason`)
+- `scripts/hooks/pre-commit` — source-controlled pre-commit hook (branch metadata + hexagonal violations + secret scan)
+- `scripts/install_git_hooks.ps1` — one-time installer (`.git/hooks/` not version-controlled)
+
+### Added — CLAUDE.md upgrades (project-specific)
+- **Doc currency check** protocol (session start KRYTYCZNE)
+- **Tier S/M/L detection** z **project-specific examples** (engine threshold tweak = S, nowy CEX = L)
+- **Anti-infinity rules** (max 2 iter safety backstop, stop-condition > count)
+- **Agent routing matrix per hexagonal layer** — per-layer specific reviewers:
+  - Engines: `python-reviewer` + `tdd-guide` (engine independence)
+  - Connectors: `silent-failure-hunter` (reconnect/heartbeat) + `security-reviewer` (auth)
+  - Processors: `python-reviewer` (numpy correctness)
+  - Orchestrator: `silent-failure-hunter` (dropped task risk)
+  - DB: `database-reviewer` (schema, partition, queries)
+  - Output: `security-reviewer` (FastAPI binding 127.0.0.1)
+- **Security krytyk scope** (TYLKO gdy auth/secret/network — pure compute SKIP)
+- **Project-specific architecture invariants (grep tests)** — hexagonal violations BLOCK commit:
+  - Engine NIE importuje connectors/db
+  - Connector NIE importuje engines/processors
+  - Processor NIE importuje connectors/db
+- **Branch management section** z stale lifecycle (7d/14d/30d) + multi-worktree rules pointer
+
+### Changed
+- FILE_HYGIENE.md: dodano `branches/` reguły (metadata MANDATORY per non-main branch)
+
+### Rationale
+Przed v0.1.4 mieliśmy tylko skrót w CLAUDE.md ze wskazaniem na global rules. Teraz infrastruktura jest **project-local** — działa bez polegania na global rules loading. Pre-commit hook enforce hexagonal architecture w runtime — zapobiega architecture drift przez setki engines/connectors w przyszłych fazach.
+
 ## [0.1.3] — 2026-05-15 — Hexagonal architecture + 4 nowe MD docs
 
 User feedback po v0.1.2: **"top of the top architektura, każdy silnik osobny plik, connectors osobno, processors osobno, parallelism max"** + lista 4 nowych dokumentów do przygotowania.

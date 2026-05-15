@@ -13,6 +13,7 @@
 | MD w root | **max 12** (te które są — patrz tabela poniżej) | Audit + konsolidacja |
 | ADR w `docs/decisions/` | **max 5 w fazach 0-6** | Sygnał over-engineering — review wszystkich |
 | Long-form deck w `docs/` | **1 plik** (`deep_owl_v1.md`) | Redaguj redakcyjnie nie wersjonuj |
+| **Branch metadata** | **1 plik per branch** w `branches/` (poza main = MANDATORY) | pre-commit hook BLOCK bez metadata |
 | **Connectors per source** | **1 katalog** w `src/deep_owl/connectors/` | Każdy CEX/source = osobny katalog |
 | **Engines** | każdy w **OSOBNYM pliku** w `src/deep_owl/engines/` | NIE konsoliduj engines w jednym pliku |
 | **Processors** | każdy w **OSOBNYM pliku** w `src/deep_owl/processors/` | Per data type, nie per use case |
@@ -40,6 +41,9 @@
 **Plus dozwolone:**
 - `docs/decisions/ADR-NNNN-{slug}.md` — Architecture Decision Records (max 5)
 - `docs/deep_owl_v1.md` — long-form architecture deck (1 plik, redaguj redakcyjnie)
+- `branches/<branch-name>.md` — branch metadata MANDATORY dla każdego branch poza main
+- `branches/_template.md` — template do kopiowania przy nowym branch
+- `branches/main.md` — main branch metadata (zawsze obecny)
 
 ## MD files — ZAKAZANE
 

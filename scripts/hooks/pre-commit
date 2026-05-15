@@ -1,0 +1,99 @@
+#!/bin/bash
+# Deep Owl pre-commit hook
+#
+# Enforces:
+# 1. Branch metadata mandatory (branches/<name>.md exists)
+# 2. Hexagonal architecture violations BLOCK commit
+# 3. No secrets in staged files (basic regex)
+#
+# Install: .\scripts\install_git_hooks.ps1
+# Bypass (NIE rekomendowane): git commit --no-verify
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+echo "[pre-commit] Branch: $BRANCH"
+
+# === 1. Branch metadata enforcement ===
+if [ "$BRANCH" != "main" ]; then
+    SAFE_NAME="${BRANCH//\//_}"
+    META_FILE="$REPO_ROOT/branches/${SAFE_NAME}.md"
+    if [ ! -f "$META_FILE" ]; then
+        echo ""
+        echo "❌ BLOCK: branch metadata file missing"
+        echo ""
+        echo "   Required: branches/${SAFE_NAME}.md"
+        echo ""
+        echo "   Fix:"
+        echo "   1. cp branches/_template.md branches/${SAFE_NAME}.md"
+        echo "   2. Edit purpose/owner/status/ETA"
+        echo "   3. git add branches/${SAFE_NAME}.md"
+        echo "   4. Retry commit"
+        echo ""
+        echo "   Bypass (NIE rekomendowane): git commit --no-verify"
+        exit 1
+    fi
+    echo "[pre-commit] ✅ Branch metadata: branches/${SAFE_NAME}.md"
+fi
+
+# === 2. Hexagonal architecture violations (Python only) ===
+if git diff --cached --name-only --diff-filter=AM | grep -qE '\.py$'; then
+    echo "[pre-commit] Checking hexagonal violations..."
+
+    VIOLATIONS=0
+
+    # Engine NIE rozmawia z connectors ani DB
+    if git diff --cached --name-only --diff-filter=AM | grep -q "src/deep_owl/engines/"; then
+        FILES=$(git diff --cached --name-only --diff-filter=AM | grep "src/deep_owl/engines/" | tr '\n' ' ')
+        if [ -n "$FILES" ]; then
+            for f in $FILES; do
+                if grep -nE "from deep_owl\.connectors|from deep_owl\.core\.db|^import duckdb|^import aiohttp|^import websockets" "$REPO_ROOT/$f" 2>/dev/null; then
+                    echo "❌ HEXAGONAL VIOLATION: $f imports I/O (engine MUSI być pure compute)"
+                    VIOLATIONS=$((VIOLATIONS + 1))
+                fi
+            done
+        fi
+    fi
+
+    # Connector NIE rozmawia z engines/processors (nie liczy biznesowych metryk)
+    if git diff --cached --name-only --diff-filter=AM | grep -q "src/deep_owl/connectors/"; then
+        FILES=$(git diff --cached --name-only --diff-filter=AM | grep "src/deep_owl/connectors/" | tr '\n' ' ')
+        for f in $FILES; do
+            if grep -nE "from deep_owl\.engines|from deep_owl\.processors" "$REPO_ROOT/$f" 2>/dev/null; then
+                echo "❌ HEXAGONAL VIOLATION: $f imports engine/processor (connector MUSI być TYLKO I/O)"
+                VIOLATIONS=$((VIOLATIONS + 1))
+            fi
+        done
+    fi
+
+    # Processor NIE rozmawia z connectors / DB
+    if git diff --cached --name-only --diff-filter=AM | grep -q "src/deep_owl/processors/"; then
+        FILES=$(git diff --cached --name-only --diff-filter=AM | grep "src/deep_owl/processors/" | tr '\n' ' ')
+        for f in $FILES; do
+            if grep -nE "from deep_owl\.connectors|from deep_owl\.core\.db|^import duckdb|^import aiohttp|^import websockets" "$REPO_ROOT/$f" 2>/dev/null; then
+                echo "❌ HEXAGONAL VIOLATION: $f imports I/O (processor MUSI być pure transform)"
+                VIOLATIONS=$((VIOLATIONS + 1))
+            fi
+        done
+    fi
+
+    if [ "$VIOLATIONS" -gt 0 ]; then
+        echo ""
+        echo "❌ $VIOLATIONS hexagonal architecture violation(s) — fix przed commit"
+        echo "   Patrz FILE_HYGIENE.md sekcja 'Hexagonal architecture rules'"
+        exit 1
+    fi
+    echo "[pre-commit] ✅ Hexagonal architecture clean"
+fi
+
+# === 3. Basic secret detection ===
+if git diff --cached --name-only --diff-filter=AM | xargs -I {} grep -lE "(api[_-]?key|secret|password|token).*['\"][a-zA-Z0-9]{20,}['\"]" {} 2>/dev/null | grep -v -E "(\.example|\.md|test_)"; then
+    echo "❌ Possible secret w staged files — review przed commit"
+    echo "   Jeśli false positive: git commit --no-verify (z user approval)"
+    exit 1
+fi
+
+echo "[pre-commit] ✅ All checks pass"
+exit 0
