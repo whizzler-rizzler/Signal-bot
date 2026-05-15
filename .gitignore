@@ -35,6 +35,12 @@ coverage.xml
 ~$*.docx
 ~$*.doc
 
+# Obsidian (user-local markdown editor metadata)
+**/.obsidian/
+
+# VS Code workspace settings (per-user)
+.vscode/
+
 # Backtest outputs
 reports/
 *.html.gz

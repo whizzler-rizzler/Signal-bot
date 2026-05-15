@@ -6,6 +6,43 @@ Wszystkie zmiany w projekcie. Format: [Keep a Changelog](https://keepachangelog.
 
 (Praca w toku — kandyduje do następnego tagu)
 
+## [0.1.2] — 2026-05-15 — WebSocket-first + Module 3 (New Listings)
+
+User feedback po v0.1.1 doprecyzował 3 fundamentalne kwestie skali:
+
+### Changed
+- **Universe scope:** pobieramy **WSZYSTKO** z 4 priorytetowych CEX (Binance/Bybit/OKX/Coinbase) bez aggressive cap filter — ~3000-4000 tokenów. Filter pipeline łagodny (tylko stablecoins/wrapped/dead exclude).
+- **Tier classification:** rozszerzone z 3 na **4 tiery** (top 100 / 500 / 2000 / rest) — bo full universe wymaga tail handling
+- **Data ingestion strategy:** **WebSocket-first** — 4 trwałe WS connections per CEX (Binance spot+futures, Bybit spot+linear, OKX, Coinbase) jako PRIMARY live data za $0
+- **REST API role:** zmienione z primary na **backfill + sanity reconcile** (co 30 min losowe próbki cross-validate vs WS)
+- **Phase plan:** Faza 3 rozdzielona na **3a (WebSocket)** + **3b (REST backfill)**
+- **Faza 2 zakres:** dodano CEX symbols daily snapshot + diff detection (foundation dla Module 3)
+- **Faza 5 zakres:** dodano Module 3 New Listings Monitor (engine + filter logic + RSS parser)
+- **Faza 6 zakres:** dashboard rozszerzony z 5 do **7 zakładek** (+ New Listings + Filter Sets UI)
+
+### Added
+- **Module 3 — New Listings Monitor** — CEX listing detector z user-configurable filter sets (powraca z out-of-scope w innym kontekście — CEX-only, NIE DEX)
+- User-defined filter sets (config.yaml defaults + dashboard UI runtime overrides) z atrybutami: market_cap range, volume range, listing count, age hours, quote assets, perpetual req, meme keywords include/exclude, tier_max, alert_on_match
+- DB tables: `cex_symbols_snapshot`, `new_listings`, `new_listing_filters`, `ws_status`
+- Data models: `Kline`, `FundingRate`, `OpenInterest`, `Liquidation`, `NewListing`, `FilterSet`
+- WebSocket lifecycle docs: reconnect (exp backoff), heartbeat (ping/pong), replay buffer
+- WS frame normalizer per CEX → common models
+- In-memory buffer (asyncio.Queue) + bulk INSERT DuckDB co 30s lub 1000 events
+- Cross-pollination M3 → M1: token w aktywnym new_listings boostuje social_velocity weight
+- Binance Announcements RSS parser (24-48h forward notice na upcoming listings)
+- `requirements.txt`: `websockets>=12,<14` dependency
+
+### Decisions
+- Universe: wszystko z 4 priorytetowych CEX (~3-4k), NIE top 5000 z CMC
+- Data primary: WebSocket (free, unlimited), REST tylko backfill+sanity
+- Module count: **3** (re-added New Listings — różny scope niż wcześniej fresh DEX)
+- Filter sets: config + UI override (najbardziej flexible)
+- Coinbase: spot only (brak public futures API)
+- Tier rozszerzone na 4 (był 3) — full universe wymaga tail tier
+
+### Cost
+**Faza 0-6: $0** — WebSocket starczy do pełnego coverage 4000 tokenów. CoinGecko free 30/min + CMC free 333/d wystarczą na daily universe rebuild.
+
 ## [0.1.1] — 2026-05-15 — DOCX → MD swap
 
 Long-form architecture deck przeniesiony z DOCX (binarny, edycja w Wordzie) do pojedynczego MD pliku.

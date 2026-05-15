@@ -1,144 +1,155 @@
 # Data Sources — Deep Owl
 
-> Wszystkie źródła danych z których czerpiemy. **Big caps CEX-first** — DEX/fresh out of scope.
+> Wszystkie źródła danych z których czerpiemy. **Big caps CEX-first** + **WebSocket-first ingestion**.
 
 ## Quick reference table
 
-| # | Źródło | Faza | Auth | Rate limit (free) | Koszt | Fallback |
-|---|---|---|---|---|---|---|
-| 1 | CoinGecko API | 2 | API key opcjonalne | 30 req/min | $0 free / $129 mo Pro | CoinMarketCap |
-| 2 | CoinMarketCap API | 2 | API key | 333 req/dzień | $0 / $79 mo Hobbyist | CoinGecko |
-| 3 | Binance REST | 3 | None (public) | 6000 weight/min | $0 | Bybit/OKX |
-| 4 | Bybit REST | 3 | None (public) | 50 req/sec | $0 | Binance/OKX |
-| 5 | OKX REST | 3 | None (public) | 20 req/2s | $0 | Binance/Bybit |
-| 6 | Coinbase REST (Exchange) | 3 | None (public) | 10 req/sec | $0 | Spot only |
-| 7 | Parent recorder (BTC/ETH/HYPE) | 3 opt | filesystem | — | $0 | CEX REST |
-| 8 | Telegram Bot API | 6 | Bot token | 30 msg/s per bot | $0 | — |
-| 9 | Social_media_scanner (parent) | 5 opt | parent venv | — | $0 | Skip social signal |
+| # | Źródło | Faza | Typ | Auth | Limit/Cost |
+|---|---|---|---|---|---|
+| 1 | Binance Spot WS | 3a | WebSocket | None | Unlimited |
+| 2 | Binance Futures WS | 3a | WebSocket | None | Unlimited |
+| 3 | Bybit Spot+Linear WS | 3a | WebSocket | None | Unlimited |
+| 4 | OKX Public WS | 3a | WebSocket | None | Unlimited |
+| 5 | Coinbase WS | 3a | WebSocket | None | Unlimited |
+| 6 | Binance REST | 3b | REST (backfill+sanity) | None | 6000 weight/min |
+| 7 | Bybit REST | 3b | REST | None | 50 req/sec |
+| 8 | OKX REST | 3b | REST | None | 20 req/2s |
+| 9 | Coinbase REST | 3b | REST | None | 10 req/sec |
+| 10 | CoinGecko API | 2 | REST (daily) | key opt | 30 req/min free / $129 Pro |
+| 11 | CoinMarketCap | 2 opt | REST | API key | 333/d free / $79 Hobbyist |
+| 12 | Binance Announcements RSS | 5 | RSS | None | n/a |
+| 13 | Bybit/OKX/Coinbase Announcements | 5 | Web scrape/RSS | None | n/a |
+| 14 | Parent CEX recorder | 3 opt | filesystem | — | BTC/ETH/HYPE tick precision |
+| 15 | Telegram Bot API | 6 | REST | Bot token | 30 msg/s |
+| 16 | Social_media_scanner (parent) | 5 opt | parent venv | — | Skip if down |
 
 ---
 
-## 1. CoinGecko API (primary universe source)
+## 1-5. WebSocket primary (PRIMARY live data)
 
-**Docs:** https://docs.coingecko.com/v3.0.1/reference/introduction
+### 1. Binance Spot WS
 
-**Used in:** Faza 2 (universe building, market cap rankings)
+**Docs:** https://binance-docs.github.io/apidocs/spot/en/#websocket-market-streams
+
+**Endpoint:** `wss://stream.binance.com:9443/stream?streams=<stream1>/<stream2>/...`
+
+**Streams (subskrybujemy):**
+- `<symbol>@kline_5m` — klines 5m, push przy każdym update + na close świecy
+- `<symbol>@kline_15m` — klines 15m
+- `<symbol>@miniTicker` — 24h rolling stats (optional)
+
+**Multiplex limit:** 1024 streams per connection. Dla ~4000 spot symboli × 2 klines = 8000 streams → potrzebujemy 4 connections (każda po 1024+).
+
+**Heartbeat:** Server wysyła ping co 3 min. Client odpowiada pong w 10 min lub disconnect.
+
+### 2. Binance Futures WS
+
+**Docs:** https://binance-docs.github.io/apidocs/futures/en/#websocket-market-streams
+
+**Endpoint:** `wss://fstream.binance.com/stream`
+
+**Streams:**
+- `<symbol>@kline_5m` — futures klines 5m
+- `!markPrice@arr@1s` — all symbols mark price + funding rate co 1s (jeden stream = wszystkie symbole)
+- `<symbol>@openInterest` — OI updates
+- `!forceOrder@arr` — all liquidations (jeden stream)
+
+**Multiplex:** 200 streams per connection. ~500 perpetual symbols → 1 connection wystarczy bo używamy `@arr` (broadcast) dla markPrice + liquidations.
+
+### 3. Bybit WS
+
+**Docs:** https://bybit-exchange.github.io/docs/v5/ws/connect
 
 **Endpoints:**
+- Spot: `wss://stream.bybit.com/v5/public/spot`
+- Linear: `wss://stream.bybit.com/v5/public/linear`
 
-| Endpoint | Purpose | Rate weight |
-|---|---|---|
-| `GET /coins/markets?vs_currency=usd&per_page=250&page=N` | Paginated tokens with market cap, volume, price | 1 |
-| `GET /coins/list` | All tokens IDs (~10k+) | 1 |
-| `GET /coins/{id}` | Token detail (community, dev metrics) | 1 (rzadko używamy) |
-
-**Rate limit:** 30 req/min (free tier). Pro tier $129/mo = 500/min, lepsze dla full universe rebuild w <5 min.
-
-**Response shape (markets):**
+**Subskrypcje (JSON message po connect):**
 ```json
-[
-  {
-    "id": "bitcoin",
-    "symbol": "btc",
-    "name": "Bitcoin",
-    "current_price": 98432.10,
-    "market_cap": 1950000000000,
-    "market_cap_rank": 1,
-    "total_volume": 28500000000,
-    "high_24h": 99100,
-    "low_24h": 97800,
-    "price_change_24h": 234,
-    "price_change_percentage_24h": 0.24,
-    "circulating_supply": 19800000,
-    "total_supply": 21000000,
-    "max_supply": 21000000,
-    "ath": 109000,
-    "atl": 67.81,
-    "atl_date": "2013-07-06T00:00:00.000Z"
-  }
-]
+{"op": "subscribe", "args": ["kline.5.BTCUSDT", "kline.15.BTCUSDT", "tickers.BTCUSDT"]}
 ```
 
-**Mapowanie do Token model:** `src/deep_owl/data/coingecko.py`.
+**Streams:**
+- `kline.{interval}.{symbol}` — klines (5, 15 = minutes)
+- `tickers.{symbol}` — z fundingRate, openInterest, lastPrice (perpetual = linear)
+- `liquidation.{symbol}` — liquidations per symbol (linear)
 
-**Watchpoints:**
-- Free tier 30/min = ~50 stron/min × 250 tokens = 12,500 tokens — wystarczy dla universe (~10k+)
-- Pełen universe rebuild zajmuje 1-2 min na free tier
-- Daily refresh wystarczy (rynek cap rzadko zmienia się znacząco intraday)
+**Multiplex:** Unlimited subscriptions per connection (Bybit nie ma hard limit). W praktyce 1 connection per market_type (spot, linear).
+
+**Heartbeat:** Send `{"op": "ping"}` co 20s (Bybit wymaga, inaczej disconnect po 5 min).
+
+### 4. OKX WS
+
+**Docs:** https://www.okx.com/docs-v5/en/#overview-websocket-overview
+
+**Endpoint:** `wss://ws.okx.com:8443/ws/v5/public`
+
+**Subskrypcje:**
+```json
+{
+  "op": "subscribe",
+  "args": [
+    {"channel": "candle5m", "instId": "BTC-USDT"},
+    {"channel": "candle15m", "instId": "BTC-USDT"},
+    {"channel": "tickers", "instId": "BTC-USDT"},
+    {"channel": "funding-rate", "instId": "BTC-USDT-SWAP"},
+    {"channel": "open-interest", "instId": "BTC-USDT-SWAP"}
+  ]
+}
+```
+
+**Multiplex:** 200 subscriptions per connection. ~500 spot + ~300 perpetual = ~800 instruments × kilka channels → potrzeba 4-8 connections.
+
+**Heartbeat:** OKX requires client ping every 25s (jeśli no data flow). Server zamyka po 30s inactivity.
+
+### 5. Coinbase WS
+
+**Docs:** https://docs.cdp.coinbase.com/exchange/docs/websocket-overview
+
+**Endpoint:** `wss://ws-feed.exchange.coinbase.com`
+
+**Subskrypcje:**
+```json
+{
+  "type": "subscribe",
+  "product_ids": ["BTC-USD", "ETH-USD", "..."],
+  "channels": ["ticker_batch", "matches", "level2_batch"]
+}
+```
+
+**Streams (Coinbase nie ma natywnego "kline" stream):**
+- `ticker_batch` — batched tickers, push co ~1s
+- `matches` — every trade (do agregacji do klines client-side)
+- `level2_batch` — order book (heavy, opcjonalne)
+
+**Custom kline aggregation:** Coinbase nie pushuje klines bezpośrednio — agregujemy z `matches` w-memory.
+
+**Multiplex:** Unlimited per connection. 1 connection wystarczy.
+
+**Heartbeat:** Niewymagane, ale rekomendowane subscribe do `heartbeat` channel dla detection idle disconnect.
 
 ---
 
-## 2. CoinMarketCap API (cross-check + fallback)
+## 6-9. CEX REST (NIE live — backfill + sanity)
 
-**Docs:** https://coinmarketcap.com/api/documentation/v1/
-
-**Used in:** Faza 2 (cross-check uniwersum, fallback gdy CoinGecko down)
-
-**Endpoints:**
-
-| Endpoint | Purpose |
-|---|---|
-| `GET /v1/cryptocurrency/listings/latest?start=1&limit=5000` | Top 5000 tokens (jeden call!) |
-| `GET /v1/cryptocurrency/quotes/latest?id=X` | Quote single token |
-
-**Rate limit:** 333 req/dzień (free Basic tier). Hobbyist $79/mo = 10k req/dzień.
-
-**Auth:** Header `X-CMC_PRO_API_KEY`.
-
-**Watchpoints:**
-- 333 calls/dzień bardzo niski — wystarczy na 1 universe rebuild + okazjonalny lookup
-- Limit 5000 per call jest dobry — top 5000 w jednym żądaniu
-- Wymagana rejestracja (free tier też)
-
----
-
-## 3-6. CEX REST APIs (Binance / Bybit / OKX / Coinbase)
-
-**Used in:** Faza 3 (klines + funding + open interest)
-
-### 3. Binance REST
+### 6. Binance REST
 
 **Docs:** https://binance-docs.github.io/apidocs/spot/en/
 
 | Endpoint | Purpose | Weight |
 |---|---|---|
-| `GET /api/v3/klines` | Spot klines (5m/15m/1h) | 1 per call |
+| `GET /api/v3/klines` | Spot klines 5m/15m/1h (max 1500 bars/call) | 1 |
 | `GET /api/v3/exchangeInfo` | All symbols metadata | 10 |
 | `GET /fapi/v1/klines` | Futures klines | 1 |
 | `GET /fapi/v1/fundingRate` | Funding history | 1 |
 | `GET /fapi/v1/openInterest` | Current OI | 1 |
 | `GET /futures/data/openInterestHist` | OI history | 1 |
 
-**Rate limit:** 6000 weight/min global (IP-based, no auth needed for public). Klines pull 1 weight per call → 6000 calls/min.
+**Rate limit:** 6000 weight/min global (IP-based, no auth). Klines = 1 weight/call → 6000 calls/min.
 
-**Klines params:** `symbol`, `interval` (1m/3m/5m/15m/30m/1h/4h/1d), `startTime`, `endTime`, `limit` (max 1500).
+**Role w Deep Owl:** TYLKO backfill historyczny (one-time) + sanity reconcile co 30 min na losowych próbkach.
 
-**Response (klines):**
-```json
-[
-  [
-    1729600000000,        // open time (ms)
-    "98432.10",           // open
-    "98500.00",           // high
-    "98300.00",           // low
-    "98432.10",           // close
-    "12.345",             // volume (BTC)
-    1729600299999,        // close time
-    "1216000.50",         // quote volume (USD)
-    1234,                 // trades count
-    "6.123",              // taker buy base
-    "603000.25",          // taker buy quote
-    "0"                   // ignored
-  ]
-]
-```
-
-**Watchpoints:**
-- 1500 bars max per call → dla 5m candles to ~5 dni history per call
-- Symbol naming: BTCUSDT (no separator). Spot vs futures różne endpointy.
-- Coin-margined futures = osobny endpoint (`/dapi/`)
-
-### 4. Bybit REST
+### 7. Bybit REST
 
 **Docs:** https://bybit-exchange.github.io/docs/v5/intro
 
@@ -149,11 +160,9 @@
 | `GET /v5/market/open-interest` | OI history |
 | `GET /v5/market/instruments-info` | Symbols metadata |
 
-**Rate limit:** 50 req/sec ≈ 3000/min. Public endpoints no auth.
+**Rate limit:** 50 req/sec ≈ 3000/min.
 
-**Klines params:** `category` (spot/linear/inverse), `symbol`, `interval`, `start`, `end`, `limit` (max 1000).
-
-### 5. OKX REST
+### 8. OKX REST
 
 **Docs:** https://www.okx.com/docs-v5/en/
 
@@ -163,11 +172,9 @@
 | `GET /api/v5/public/funding-rate-history` | Funding history |
 | `GET /api/v5/public/open-interest` | OI |
 
-**Rate limit:** 20 req/2s ≈ 600/min. Lower than Binance/Bybit.
+**Rate limit:** 20 req/2s ≈ 600/min.
 
-**Symbol naming:** BTC-USDT-SWAP (perpetual), BTC-USDT (spot). Different from Binance/Bybit.
-
-### 6. Coinbase Exchange REST
+### 9. Coinbase REST
 
 **Docs:** https://docs.cdp.coinbase.com/exchange/reference
 
@@ -176,75 +183,112 @@
 | `GET /products/{product_id}/candles` | Historic rates |
 | `GET /products` | All products |
 
-**Rate limit:** 10 req/sec public.
-
-**Watchpoints:**
-- **SPOT ONLY** — Coinbase nie ma public futures API (Coinbase Advanced Trade ma Futures ale wymaga auth)
-- Dla USA-listed tokens (USDT pairs ograniczone, używa głównie USD/USDC pairs)
-- Symbol naming: BTC-USD (myślnik)
+**Rate limit:** 10 req/sec public. **SPOT ONLY** — brak public futures API.
 
 ---
 
-## 7. Parent CEX recorder (read-only reuse, opcjonalne)
+## 10. CoinGecko API (tier rankings)
+
+**Docs:** https://docs.coingecko.com/v3.0.1/reference/introduction
+
+**Used in:** Faza 2 (universe building — TYLKO dla market cap rankings, nie filter cap)
+
+**Endpoint:** `GET /coins/markets?vs_currency=usd&per_page=250&page=N`
+
+**Rate limit:** 30 req/min free → ~50 stron/min × 250 tokens = 12,500 tokens/min. Pełen pull (~10k tokens) w 1-2 min. Daily refresh OK.
+
+**Pro tier $129/mo:** 500 req/min jeśli wymusi (jeszcze niepotrzebny w Fazie 2).
+
+**Response (relevant fields):**
+```json
+[{
+  "id": "bitcoin",
+  "symbol": "btc",
+  "name": "Bitcoin",
+  "current_price": 98432.10,
+  "market_cap": 1950000000000,
+  "market_cap_rank": 1,
+  "total_volume": 28500000000
+}]
+```
+
+**Mapping:** `market_cap_rank` → tier classification (1-100 = Tier 1, 101-500 = Tier 2, etc.)
+
+---
+
+## 11. CoinMarketCap (cross-check + fallback)
+
+**Used in:** Faza 2 (cross-check rankings, opcjonalne)
+
+**Endpoint:** `GET /v1/cryptocurrency/listings/latest?start=1&limit=5000`
+
+**Rate limit:** 333 req/d (free Basic tier). Jeden call zwraca top 5000 — wystarczy na daily cross-check.
+
+**Auth:** Header `X-CMC_PRO_API_KEY` (free tier też wymaga rejestracji).
+
+---
+
+## 12-13. CEX Announcements (Module 3 New Listings)
+
+**Used in:** Faza 5 (Module 3 — new listings detection)
+
+### 12. Binance Announcements RSS
+
+**URL:** `https://www.binance.com/en/support/announcement/c-48.xml`
+
+**Format:** RSS feed (XML) — parsujemy via `feedparser` Python lib.
+
+**Use:** Detection upcoming listings 24-48h przed listingiem (Binance ogłasza wcześniej). Cross-reference z `cex_diff_snapshot` flow.
+
+### 13. Bybit / OKX / Coinbase Announcements
+
+**Bybit:** Web scrape blog announcements (RSS niedostępny w stable form)
+**OKX:** Announcements API niedostępny publicznie — scrape
+**Coinbase:** Web scrape `https://blog.coinbase.com/`
+
+**Fallback:** jeśli scrape nie działa, opieramy się TYLKO na CEX diff snapshot (compare today vs yesterday). To wystarczy do detection — może być ~1 dzień delay vs RSS feed (Binance has RSS).
+
+---
+
+## 14. Parent CEX recorder (read-only reuse, opcjonalne)
 
 **Path:** `D:/Crypto/Claude/data/{exchange}/{date}/{symbol}_{update_type}_{hour}.bin.zst`
 
-**Used in:** Faza 3+ (BTC/ETH/HYPE tick precision dla cross-validation Module 1 sygnałów; opcjonalne)
-
-**Format:** Binary zstandard-compressed records, hourly rotation, per exchange/symbol/update_type.
-
-**Update types:** orderbook, trades, funding, markprice, liquidations.
-
-**Reader:** parent `D:/Crypto/Claude/analyzer/data/reader.py` — streaming reader.
+**Used in:** Faza 3 opt (BTC/ETH/HYPE tick precision dla cross-validation Module 1 sygnałów)
 
 **Watchpoints:**
-- TYLKO read access (parent recorder ma exclusive write)
+- TYLKO read access
 - Data od 2026-04-08
-- Pair coverage: BTC, ETH, HYPE — dla pozostałych ~5000 tokenów używamy CEX REST API
-- Tick precision tylko dla cross-validation (czy 5m candle z REST API matches tick aggregate z recordera)
+- Pair coverage: tylko BTC, ETH, HYPE — dla pozostałych ~4000 tokenów używamy CEX REST API klines
+- Tick precision tylko dla orderbook L5 sygnału (#7 w Module 1) — sanity check
 
 ---
 
-## 8. Telegram Bot API
+## 15. Telegram Bot API
 
 **Docs:** https://core.telegram.org/bots/api
 
-**Used in:** Faza 6 (alerts + interactive bot)
-
 **Setup:**
-1. Otwórz Telegram, znajdź `@BotFather`
+1. Telegram → `@BotFather`
 2. `/newbot` → nazwa + username
-3. Skopiuj token → `.env` jako `TELEGRAM_BOT_TOKEN`
-4. Wyślij wiadomość do bota → uruchom test żeby zdobyć `chat_id` → `.env`
+3. Token → `.env` jako `TELEGRAM_BOT_TOKEN`
+4. Send msg do bota → fetch chat_id → `.env`
 
-**Library:** `python-telegram-bot >= 20.7` (async-native).
+**Library:** `python-telegram-bot >= 20.7`
 
-**Rate limits:**
-- 30 messages/sec per bot total
-- 1 message/sec per chat
+**Rate limits:** 30 msg/s globalny, 1 msg/s per chat.
 
-**Komendy (Faza 6):** `/start`, `/help`, `/signals [N]`, `/top`, `/paper`, `/backtest <strategy>`, `/mute <token>`, `/tier <1|2|3>`.
+**Komendy:** `/start`, `/help`, `/signals [N]`, `/top`, `/paper`, `/backtest <strategy>`, `/listings [filter_set]`, `/mute <token>`, `/tier <1-4>`.
 
 ---
 
-## 9. Social_media_scanner (parent reuse — opcjonalnie)
+## 16. Social_media_scanner (parent reuse — opcjonalne)
 
 **Path:** `D:/Crypto/Claude/Social_media_scanner/`
 
-**Used in:** Faza 5 (social signal w Module 1, opcjonalne)
+**Used in:** Faza 5 (Module 1 signal #6, opcjonalne)
 
-**Co oferuje:**
-- Twitter scanner + sentiment classifier
-- TruthSocial scanner
-
-**Integration plan:**
-- Read-only access do parent output (DuckDB lub JSON)
-- Mapping: token symbol → mention count + sentiment score
-- Rolling 1h vs 24h_avg → velocity feature
-
-**Watchpoints:**
-- Parent ma OSOBNY venv — uruchamiamy ją niezależnie, czytamy tylko persisted output
-- Jeśli scanner nie działa → Module 1 fallback (waga social = 0, redystrybucja)
+**Read-only:** parent DuckDB lub JSON output, mapping symbol → mention count + sentiment.
 
 ---
 
@@ -254,31 +298,33 @@ Per-source fallback w `src/deep_owl/data/registry.py`:
 
 ```python
 DATA_SOURCE_PRIORITY = {
-    "universe_markets": ["coingecko", "coinmarketcap"],     # CG primary, CMC fallback
-    "klines": ["binance", "bybit", "okx", "coinbase"],      # per-token: który CEX ma listing
-    "funding": ["binance", "bybit", "okx"],                 # Coinbase nie ma public futures API
-    "open_interest": ["binance", "bybit", "okx"],
-    "tick_precision": ["parent_recorder", "skip"],          # tylko BTC/ETH/HYPE
-    "social": ["parent_scanner", "skip"],                   # opcjonalne
+    "live_klines": ["websocket", "rest_polling_fallback"],          # WS primary
+    "universe_markets": ["coingecko", "coinmarketcap"],             # CG primary
+    "klines_historical": ["binance_rest", "bybit_rest", "okx_rest", "coinbase_rest"],
+    "funding": ["binance_rest", "bybit_rest", "okx_rest"],          # Coinbase brak
+    "open_interest": ["binance_rest", "bybit_rest", "okx_rest"],
+    "new_listing_announcements": ["binance_rss", "cex_diff_snapshot"],
+    "tick_precision": ["parent_recorder", "skip"],                  # tylko BTC/ETH/HYPE
+    "social": ["parent_scanner", "skip"],                           # opcjonalne
 }
 ```
 
-Pierwszy sukces wygrywa. Skip = sygnał liczony jako 0, redistribute waga do innych.
+Pierwszy sukces wygrywa. Skip = sygnał liczony jako 0, redistribute waga.
 
 ---
 
 ## Sekrety — gdzie trzymać
 
-| Sekret | Storage | Faza wymagana |
+| Sekret | Storage | Wymagany w fazie |
 |---|---|---|
-| `COINMARKETCAP_API_KEY` | `.env` (gitignored) | 2 (cross-check + fallback) |
-| `COINGECKO_API_KEY` | `.env` (gitignored) | 2 opt (Pro tier dla wyższego rate limit) |
+| `COINMARKETCAP_API_KEY` | `.env` (gitignored) | 2 opt (cross-check) |
+| `COINGECKO_API_KEY` | `.env` (gitignored, opt) | 2 opt (Pro tier rate limit) |
 | `TELEGRAM_BOT_TOKEN` | `.env` (gitignored) | 6 |
 | `TELEGRAM_CHAT_ID` | `.env` (gitignored) | 6 |
 
-CEX public APIs (Binance, Bybit, OKX, Coinbase) **nie wymagają auth** dla publicznych endpointów (klines, funding, OI).
+**CEX WS i REST = brak auth wymagane dla publicznych endpointów.**
 
-**NIE commitować `.env`.** `.env.example` jest committed z pustymi values jako template.
+**NIE commitować `.env`.** `.env.example` committed z pustymi values.
 
 ---
 
@@ -290,5 +336,21 @@ CEX public APIs (Binance, Bybit, OKX, Coinbase) **nie wymagają auth** dla publi
 - ❌ GoPlus Security
 - ❌ Pumpfun, Raydium, Jupiter (DEX endpoints)
 - ❌ Etherscan, Solscan (block explorer)
-- ❌ Glassnode, Dune, Nansen (on-chain analytics — może w v2 jako optional)
+- ❌ Glassnode, Dune, Nansen (on-chain analytics — może w v2)
 - ❌ News APIs (CryptoPanic, Decrypt — może w v2)
+
+---
+
+## Cost summary (Faza 0-6)
+
+| Resource | Free | Paid |
+|---|---|---|
+| CEX WebSocket (Binance/Bybit/OKX/Coinbase) | UNLIMITED | — |
+| CEX REST (backfill + sanity) | Free | — |
+| CoinGecko API | 30 req/min wystarczy | $129/mo Pro jeśli wymusi |
+| CoinMarketCap | 333/d wystarczy | $79/mo Hobbyist |
+| Telegram Bot API | Free | — |
+| Storage local | Lokalny dysk | — |
+| Server | Local dev | $20-50/mo VPS (Faza 7+) |
+
+**Faza 0-6: 100% darmowe.** Pełne pokrycie ~4000 tokenów × live klines/funding/OI za $0.

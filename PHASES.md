@@ -1,52 +1,58 @@
 # PHASES — Deep Owl
 
-> **Current focus:** Faza 0 zamknięta (v0.0.0), pivot na big caps CEX-first (v0.1.0 docs only)
+> **Current focus:** Faza 0 zamknięta (4 tagi), pivot v0.1.2 dodał WebSocket-first + Module 3 (New Listings).
 >
-> **Top priority:** ESTABLISHED big caps na CEX-ach (top ~5000 z CMC/CoinGecko po filtrowaniu). DEX/fresh OUT OF SCOPE.
+> **Top priority:** Big caps CEX-first, full coverage ~3000-4000 tokenów z 4 priorytetowych CEX (Binance/Bybit/OKX/Coinbase). DEX/fresh DEX OUT OF SCOPE.
 
-## Faza 0 — Plan-as-docs ✅ + Pivot v0.1.0 (TERAZ)
+## Faza 0 — Plan-as-docs ✅ (4 tagi)
 
-**Cel:** 20-stronicowy DOCX + 8 MD files + skeleton repo + git init. **Bez kodu produkcyjnego — tylko docs + struktura.**
+**Cel:** docs + skeleton repo. **Bez kodu produkcyjnego.**
 
 ### v0.0.0 (initial)
-- [x] Plan zatwierdzony przez user (ExitPlanMode)
-- [x] `.gitignore` + `.env.example`
-- [x] `pyproject.toml` + `requirements.txt` + `requirements-dev.txt`
 - [x] Skeleton 8 MD + Python source + tests + scripts
-- [x] DOCX v1 (DEX-first, fresh projects) — DEPRECATED przez pivot
+- [x] DOCX v1 (DEX-first, deprecated)
 
 ### v0.1.0 (pivot — big caps CEX-first)
-- [x] User feedback: "TOP 1 = big caps na giełdach od lat, fresh DEX = wywal"
-- [x] Update CLAUDE.md (zakres, data sources, NIE fresh module)
-- [x] Update ARCHITECTURE.md (kompletny refactor — 2 moduły zamiast 3, CEX REST primary)
-- [x] Update PHASES.md (ten plik — nowe fazy)
-- [x] Update DATA_SOURCES.md (CMC/CoinGecko/CEX REST primary, DEX/RugCheck/GoPlus REMOVED)
-- [x] Update README.md (nowy elevator pitch)
-- [x] Update CHANGELOG.md (entry v0.1.0)
-- [x] Update db/schema.sql (drop fresh_projects, add token_listings/klines/funding/open_interest)
-- [x] Update src/deep_owl/cli.py + data/models.py (nowe komendy + modele)
-- [x] Regenerate long-form deck w docs/deep_owl_v1.md (big caps content)
-- [x] Tag v0.1.0
-- [x] DOCX → MD swap (drop deep_owl_v1.docx + generate_docx.js, single docs/deep_owl_v1.md)
-- [x] Tag v0.1.1
+- [x] User feedback: "TOP 1 = big caps, fresh DEX wywal"
+- [x] Refactor wszystkich docs na CEX-first scope
+- [x] DB schema v2 (drop fresh_projects, add token_listings/klines/funding/OI)
 
-**Verification (v0.1.0):**
-1. `git log --oneline | head -3` → 2 commity (v0.0.0 init + v0.1.0 pivot)
-2. `grep -ri "dexscreener\|birdeye\|rugcheck\|goplus\|fresh" *.md src/ | wc -l` → 0 (lub tylko negative refs "out of scope")
-3. `grep -ri "big.cap\|coinmarketcap\|coingecko" *.md` → kilkanaście matches w ARCHITECTURE/CLAUDE/DATA_SOURCES
-4. Otwarcie `docs/deep_owl_v1.md` → 12 sekcji z big caps content
+### v0.1.1 (DOCX → MD swap)
+- [x] DOCX zastąpiony pojedynczym `docs/deep_owl_v1.md`
+- [x] Drop scripts/generate_docx.js
 
-**Done criteria:** Wszystkie checkboxes ✅ + user otworzył DOCX i zatwierdził pivot. Tag `v0.1.0`.
+### v0.1.2 (WS-first + Module 3 — TERAZ)
+- [x] User feedback: "pobieramy wszystko (~3-4k tokens), live 5m/15m, dodaj New Listings z user filters"
+- [x] Update ARCHITECTURE.md (WS-first ingestion, 3 modules, łagodny filter)
+- [x] Update docs/deep_owl_v1.md (sync z architekturą)
+- [x] Update PHASES.md (ten plik — nowe fazy 3a/3b)
+- [x] Update DATA_SOURCES.md (WS endpoints + RSS feeds)
+- [x] Update CLAUDE.md (3 modules + WS-first)
+- [x] Update README.md
+- [x] Update CHANGELOG.md (entry v0.1.2)
+- [x] Update db/schema.sql (add cex_symbols_snapshot, new_listings, new_listing_filters, ws_status)
+- [x] Update src/deep_owl/data/models.py (add Kline, FundingRate, OI, NewListing, FilterSet models)
+- [x] Update src/deep_owl/cli.py (nowe komendy: `ws start`, `listings list/check`)
+- [x] Add requirements: `websockets>=12,<14`
+- [x] Tag v0.1.2
+
+**Verification:**
+1. `git log --oneline | head -5` → 4 commity post-init
+2. `git tag` → v0.0.0, v0.1.0, v0.1.1, v0.1.2
+3. `grep -c "WebSocket" ARCHITECTURE.md docs/deep_owl_v1.md` → kilkadziesiąt matches
+4. `grep "Module 3" docs/deep_owl_v1.md` → New Listings sekcja obecna
+
+**Done criteria:** Wszystkie checkboxes ✅ + user otworzył MD i zatwierdził kierunek.
 
 ---
 
 ## Faza 1 — Repo bootstrap (next)
 
-**Cel:** Działający skeleton: venv + deps zainstalowane, pytest runs (placeholder), ruff + mypy clean.
+**Cel:** Działający skeleton: venv + deps zainstalowane, pytest runs, ruff + mypy clean.
 
 - [ ] Setup venv: `python -m venv venv && .\venv\Scripts\Activate.ps1`
 - [ ] `pip install -r requirements-dev.txt`
-- [ ] `src/deep_owl/config.py` — Pydantic Settings z `.env` loading + filter rules
+- [ ] `src/deep_owl/config.py` — Pydantic Settings z `.env` loading + filter rules + filter sets
 - [ ] `src/deep_owl/logger.py` — structlog setup (JSON output)
 - [ ] `src/deep_owl/db/client.py` — DuckDB wrapper (connect, exec, query, ctx manager)
 - [ ] Migration runner (apply schema.sql na startup, idempotent)
@@ -56,54 +62,70 @@
 - [ ] Verify: `pytest -q` pass, `ruff check src/` clean, `mypy src/deep_owl/` clean
 - [ ] Update `CHANGELOG.md`, tag `v0.2.0`
 
-**Done criteria:** `pytest` + `ruff` + `mypy` clean lokalnie. `deep-owl --version` wypisuje 0.2.0.
+**Done criteria:** `pytest` + `ruff` + `mypy` clean. `deep-owl --version` wypisuje 0.2.0.
 
 ---
 
-## Faza 2 — Universe Builder (CMC + CoinGecko)
+## Faza 2 — Universe Builder + New Listings detection
 
-**Cel:** Lista ~5000 realnych tokenów po filtrowaniu z 10k+ na CMC/CoinGecko. Tabele `tokens` + `token_listings`.
+**Cel:** Lista ~3000-4000 realnych tokenów z CEX `/exchangeInfo` + tier classification + daily diff dla new listings.
 
-- [ ] `src/deep_owl/data/coinmarketcap.py` — async client z rate limit (333/dzień free), retry/backoff
-  - Endpoint: `/v1/cryptocurrency/listings/latest` (paginated)
 - [ ] `src/deep_owl/data/coingecko.py` — async client (30/min free)
-  - Endpoint: `/coins/markets?vs_currency=usd&per_page=250&page=N`
-- [ ] `src/deep_owl/modules/universe.py` — filter pipeline (market cap, volume, age, listings, blacklists)
-- [ ] `src/deep_owl/data/cex_listings.py` — per-token resolver (na których CEX-ach jest listed, jakie symbole)
-  - Per-CEX symbol mapping (BTC → Binance:BTCUSDT, Bybit:BTCUSDT, OKX:BTC-USDT, Coinbase:BTC-USD)
-- [ ] DuckDB writer: upsert tokens + token_listings
-- [ ] CLI: `deep-owl universe build` (force rebuild), `deep-owl universe list --tier 1` (show top 100)
-- [ ] Tests: filter logic, blacklist matching, CEX resolver
-- [ ] Verify: real run 1x → ~5000 rows w tokens (sanity check), top 100 zawiera BTC/ETH/SOL/...
+  - Endpoint: `/coins/markets?per_page=250&page=N` dla tier rankings
+- [ ] `src/deep_owl/data/coinmarketcap.py` — async client (cross-check opt)
+- [ ] `src/deep_owl/data/cex/exchange_info.py` — pull symbols list per CEX (Binance/Bybit/OKX/Coinbase)
+- [ ] `src/deep_owl/modules/universe.py` — łagodny filter pipeline (blacklists only, no aggressive cap)
+- [ ] CEX listing detector — per-token symbol resolution per CEX
+- [ ] **CEX symbols daily snapshot** — write `cex_symbols_snapshot` table
+- [ ] **Diff detection** — porównaj today vs yesterday, INSERT do `new_listings` table
+- [ ] CLI: `deep-owl universe build`, `universe list --tier 1`, `listings new --filter-set conservative`
+- [ ] Tests: filter logic, blacklist matching, CEX symbol resolver, diff detector
+- [ ] Verify: real run → ~3-4k rows w `tokens`, top 100 zawiera BTC/ETH/SOL/..., diff daje sensowne new listings
 - [ ] Update `CHANGELOG.md`, tag `v0.3.0`
 
-**Done criteria:** `deep-owl universe build` runs do końca, `tokens` table ma ~5000 rows, filter daje sensowne top-100.
+**Done criteria:** `deep-owl universe build` runs, `tokens` ma ~4k rows, `new_listings` ma dzisiejsze nowe symbole.
 
 ---
 
-## Faza 3 — CEX REST API Adapters (klines + funding + OI)
+## Faza 3a — CEX WebSocket adapters (KRYTYCZNE)
 
-**Cel:** Pull klines 5m/15m/1h + funding rates + open interest dla całego universe z 4 CEX-ów.
+**Cel:** Live data ingestion z 4 CEX-ów via WebSocket. Persistent connections, multiplex, reconnect logic.
 
-- [ ] `src/deep_owl/data/cex/binance.py` — async client
-  - Endpoints: `/api/v3/klines`, `/fapi/v1/fundingRate`, `/fapi/v1/openInterest`
-- [ ] `src/deep_owl/data/cex/bybit.py` — async client
-  - Endpoints: `/v5/market/kline`, `/v5/market/funding/history`, `/v5/market/open-interest`
-- [ ] `src/deep_owl/data/cex/okx.py` — async client
-  - Endpoints: `/api/v5/market/candles`, `/api/v5/public/funding-rate-history`, `/api/v5/public/open-interest`
-- [ ] `src/deep_owl/data/cex/coinbase.py` — async client (spot only, brak futures)
-  - Endpoint: `/products/{id}/candles`
-- [ ] Rate limit middleware (per CEX, per endpoint quota tracking)
-- [ ] Normalizer: each response → wspólny `Kline`, `FundingRate`, `OpenInterest` model
-- [ ] DuckDB writers: bulk INSERT do klines_5m, klines_15m, funding_history, open_interest
-- [ ] Backfill mode: `deep-owl ingest --token BTC --from 2024-01-01` (historical pull)
-- [ ] Realtime mode: `deep-owl ingest --realtime` (continuous polling)
-- [ ] Tests: rate limiter, retry logic, normalization (golden fixtures)
-- [ ] CLI: `deep-owl ingest --token X --cex Y --interval 5m`
-- [ ] Verify: pull BTCUSDT klines z Binance × 1 dzień → 288 rows w klines_5m
+- [ ] `src/deep_owl/data/cex/binance_ws.py` — Spot + Futures clients
+  - Streams: `<sym>@kline_5m`, `<sym>@kline_15m`, `!markPrice@arr@1s`, `<sym>@openInterest`, `!forceOrder@arr`
+- [ ] `src/deep_owl/data/cex/bybit_ws.py` — Spot + Linear clients
+- [ ] `src/deep_owl/data/cex/okx_ws.py` — Public client (candles + funding + OI)
+- [ ] `src/deep_owl/data/cex/coinbase_ws.py` — Public client (tickers + candles)
+- [ ] WS lifecycle manager: connect, subscribe (multiplex), heartbeat, reconnect (exp backoff)
+- [ ] Frame normalizer per CEX → common `Kline`, `FundingRate`, `OpenInterest`, `Liquidation` models
+- [ ] In-memory buffer (asyncio.Queue) + bulk INSERT do DuckDB co 30s lub 1000 events
+- [ ] Replay buffer: po reconnect >5s downtime → REST `/klines` pull dla missed bars
+- [ ] WS status persistence (`ws_status` table) + health metrics
+- [ ] Tests: mock WS server (aresponses-style), reconnect scenarios, buffer flushing
+- [ ] CLI: `deep-owl ws start --cex binance --market spot`, `deep-owl ws status`
+- [ ] Verify: 4 connections active, ~4000 streams subscribed, klines wpływają do DuckDB
 - [ ] Update `CHANGELOG.md`, tag `v0.4.0`
 
-**Done criteria:** Backfill pulls 1 rok klines top 100 tokenów (4 CEX) → kilka GB w DuckDB. Realtime mode runs stable.
+**Done criteria:** WS streams działają continuous, `klines_5m` ma ~4000 tokens × 12 candles/h. Brak silent failures.
+
+---
+
+## Faza 3b — CEX REST adapters (backfill + sanity)
+
+**Cel:** REST API dla one-time backfill historycznego + co 30min sanity reconcile vs WS.
+
+- [ ] `src/deep_owl/data/cex/binance_rest.py` — klines historical + sanity check
+- [ ] `src/deep_owl/data/cex/bybit_rest.py`
+- [ ] `src/deep_owl/data/cex/okx_rest.py`
+- [ ] `src/deep_owl/data/cex/coinbase_rest.py`
+- [ ] Rate limit middleware (per CEX, per endpoint quota tracking via tenacity)
+- [ ] Backfill orchestrator: `deep-owl backfill --token BTC --from 2025-01-01`
+- [ ] Sanity reconcile job: random 50 tokens × 4 CEX co 30min, log divergence > 0.1%
+- [ ] Tests: rate limiter, retry logic, normalization (golden fixtures)
+- [ ] Verify: backfill 30 dni dla top 100 tokenów w <30 min, sanity job runs bez warnings
+- [ ] Update `CHANGELOG.md`, tag `v0.4.1`
+
+**Done criteria:** Backfill BTC/ETH/major alts od 2024-01-01 do DuckDB, sanity job clean.
 
 ---
 
@@ -121,52 +143,67 @@
 - [ ] `src/deep_owl/modules/backtest/metrics.py` — Sharpe, Sortino, Calmar, max DD, win rate
 - [ ] `src/deep_owl/modules/backtest/engine.py` — walk-forward runner
 - [ ] HTML report generator (plotly + jinja2)
-- [ ] Tests: golden fixtures (znane przypadki), shape checks
 - [ ] CLI: `deep-owl backtest --strategy funding_squeeze --universe top_100 --days 365`
 - [ ] Verify: end-to-end run na top 100 / 1 rok, HTML z metrics + equity curve
 - [ ] Update `CHANGELOG.md`, tag `v0.5.0`
 
-**Done criteria:** Można uruchomić backtest z CLI, widzieć HTML report. Coverage ≥ 80%.
+**Done criteria:** Backtest CLI runs, HTML report z metrics. Coverage ≥ 80%.
 
 ---
 
-## Faza 5 — Module 1: Big Cap Accumulation Detector
+## Faza 5 — Module 1 + Module 3
 
-- [ ] `src/deep_owl/modules/accumulation.py` — main detector class
-- [ ] Signal extractors per sygnał (volume_rising, funding_skew, oi_buildup, cross_exchange_div, liq_imbalance, social, bid_ask)
-- [ ] Weighted scoring + tier-aware thresholds
-- [ ] Alert gating (per-token cooldown, daily cap)
+**Cel:** Accumulation Detector (M1) + New Listings Monitor (M3) — engine + scoring + filter logic.
+
+### Module 1 — Big Cap Accumulation Detector
+
+- [ ] `src/deep_owl/modules/accumulation.py` — main detector
+- [ ] Signal extractors per sygnał (volume, funding, OI, cross-exchange, liquidation, social, bid/ask)
+- [ ] Weighted scoring + tier-aware thresholds (4 tiers)
+- [ ] Alert gating (per-token cooldown by tier, daily cap)
 - [ ] Persist do `signals` table
-- [ ] Continuous mode: asyncio task co 5min iteruje universe
-- [ ] **Cross-validation Modułu 1 na historical data** (replay scoring na last 1-2 lata, precision/recall vs realne breakouty)
-- [ ] Wagi tuning na podstawie cross-validation
+- [ ] Continuous mode: asyncio task co 5min
+- [ ] **Cross-validation Modułu 1** na historical 1-2 lata, precision/recall vs realne breakouts (price +20% w 24h)
+- [ ] Wagi tuning na podstawie cross-validation results
 - [ ] Tests: każdy sygnał, scoring, tier logic
-- [ ] CLI: `deep-owl detect --token BTC` (single), `deep-owl run` (continuous)
+
+### Module 3 — New Listings Monitor
+
+- [ ] `src/deep_owl/modules/new_listings.py` — main monitor
+- [ ] `src/deep_owl/data/announcements/binance_rss.py` — RSS parser
+- [ ] `src/deep_owl/data/announcements/bybit_scrape.py`, `okx_scrape.py`, `coinbase_scrape.py`
+- [ ] Filter set engine — apply user-defined filters per match
+- [ ] Persist do `new_listings` + `new_listing_filters` tables
+- [ ] CLI: `deep-owl listings list --filter-set conservative`, `listings check --token X`
+- [ ] Continuous mode: asyncio task co 1h dla announcement check + co 24h dla CEX diff
+- [ ] Tests: rugpull filter cases, growth scoring, filter set matching
+
+**Done criteria:** Continuous mode runs, M1 signals + M3 listings zapisywane. Cross-validation M1 precision > 0.4 OOS.
+
 - [ ] Update `CHANGELOG.md`, tag `v0.6.0`
 
-**Done criteria:** Continuous mode runs, signals zapisywane, cross-validation pokazuje precision > 0.4 (lepsza niż random) na out-of-sample.
-
 ---
 
-## Faza 6 — Output: Telegram + Dashboard + Paper Trader
+## Faza 6 — Output: Telegram + Dashboard + Paper Trader + Filter Sets UI
 
-- [ ] `src/deep_owl/output/paper_trader.py` — simulated fill engine (CEX-aware fees)
+- [ ] `src/deep_owl/output/paper_trader.py` — simulated fill engine (CEX-aware fees + slippage)
 - [ ] `src/deep_owl/output/telegram_bot.py` — bot + komendy
 - [ ] `src/deep_owl/output/dashboard.py` — FastAPI app
-- [ ] Templates HTML/HTMX dla 6 zakładek (Universe, Live Signals, Top Movers, Paper, Backtests, Settings)
+- [ ] Templates HTML/HTMX dla 7 zakładek (Universe, Live Signals, Top Movers, New Listings, Filter Sets, Paper, Backtests, Settings)
+- [ ] **Filter Sets UI** — runtime tworzenie/edytowanie z live preview match count
 - [ ] Wiring: signal → paper trade auto-open (configurable)
 - [ ] Tests integration (full flow: ingest → signal → paper trade → dashboard show)
-- [ ] CLI: `deep-owl serve` (uruchamia bot + dashboard + worker)
+- [ ] CLI: `deep-owl serve` (uruchamia bot + dashboard + WS workers + scorer worker)
 - [ ] Manual demo z user
-- [ ] Update `CHANGELOG.md`, tag `v0.7.0` lub `v1.0.0` (jeśli ready)
+- [ ] Update `CHANGELOG.md`, tag `v0.7.0` lub `v1.0.0`
 
-**Done criteria:** End-to-end demo: ingester → Module 1 wykrył sygnał → Telegram alert → dashboard pokazuje → paper trade otwarty → 24h later widzimy PnL.
+**Done criteria:** End-to-end demo: WS ingester → M1/M3 wykryły → Telegram alert → dashboard pokazuje → paper trade otwarty → 24h later widzimy PnL.
 
 ---
 
 ## Out of scope (CAŁKOWICIE — nie planujemy w tym projekcie)
 
-- ❌ Fresh DEX projects monitor (Pumpfun, Raydium new pairs, Birdeye new tokens)
+- ❌ Fresh DEX projects monitor (Pumpfun, Raydium new pairs, Birdeye)
 - ❌ Rugpull detection (RugCheck.xyz, GoPlus Security)
 - ❌ DEX adapters (Dexscreener, Birdeye, Jupiter, Uniswap)
 - ❌ Per-chain native RPC (Solana web3.py, Ethereum eth_call)
@@ -180,6 +217,6 @@
 
 ## Reguły aktualizacji tego pliku
 
-1. **Co sesję:** zaznaczaj ukończone checkboxes, dopisuj odkryte sub-taski (NIE bezpośrednie taski — wszystko musi się mieścić w fazie)
+1. **Co sesję:** zaznaczaj ukończone checkboxes, dopisuj odkryte sub-taski (wszystko musi się mieścić w fazie)
 2. **Per fazę:** po zamknięciu fazy → update CHANGELOG + tag git
-3. **Nie dodawaj fazy 7+ przed zamknięciem 6** (anti-scope-creep). Jeśli nowy duży pomysł → dyskusja z userem, decyzja czy to v2 czy refactor istniejącej fazy.
+3. **Nie dodawaj fazy 7+ przed zamknięciem 6** (anti-scope-creep)

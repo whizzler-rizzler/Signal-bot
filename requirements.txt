@@ -4,6 +4,10 @@
 # Async I/O + HTTP
 aiohttp>=3.9,<4
 tenacity>=8.2,<10           # retry with exponential backoff
+websockets>=12,<14          # KRYTYCZNE: WS-first ingestion (Faza 3a)
+
+# RSS parsing (Module 3 New Listings — Binance Announcements)
+feedparser>=6.0,<7
 
 # Storage
 duckdb>=1.0,<2
